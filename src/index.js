@@ -80,6 +80,10 @@ module.exports = class SSP extends EventEmitter {
         this.eventEmitter.emit(this.currentCommand, buffer)
       })
 
+      this.port.on('data', buffer => {
+        this.emit('DATA_RECEIVED', { command: this.currentCommand, data: [...buffer] })
+      })
+
       this.port.on('error', error => {
         reject(error)
         this.emit('CLOSE')
@@ -169,6 +173,7 @@ module.exports = class SSP extends EventEmitter {
 
   getPromise(buffer, command) {
     this.currentCommand = command
+    this.emit('DATA_SENT', { command, data: [...buffer] })
     return new Promise(resolve => {
       this.port.write(buffer)
       this.port.drain()

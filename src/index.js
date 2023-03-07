@@ -135,7 +135,6 @@ module.exports = class SSP extends EventEmitter {
           return this.exec('SET_MODULUS', int64LE(this.keys.modulusKey))
         })
         .then(result => {
-          console.log(result)
           if (!result || !result.success) {
             return reject(result)
           }

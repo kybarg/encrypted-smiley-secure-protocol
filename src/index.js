@@ -312,23 +312,30 @@ module.exports = class SSP extends EventEmitter {
   }
 
   enable() {
-    return this.command('ENABLE').then(res => {
-      if (res.status === 'OK') {
-        this.enabled = true
-        if (!this.polling) this.poll(true)
-      }
-      return res
-    })
+    let result
+    return this.command('ENABLE')
+      .then(res => {
+        result = res
+        if (res.status === 'OK') {
+          this.enabled = true
+          if (!this.polling) return this.poll(true)
+        }
+        return
+      })
+      .then(() => result)
   }
 
   disable() {
-    return this.command('DISABLE').then(res => {
-      if (res.status === 'OK') {
-        this.enabled = false
-        this.poll(false)
-      }
-      return res
-    })
+    let result
+    return this.command('DISABLE')
+      .then(res => {
+        result = res
+        if (res.status === 'OK') {
+          this.enabled = false
+        }
+        return this.poll(false)
+      })
+      .then(() => result)
   }
 
   command(command, args) {

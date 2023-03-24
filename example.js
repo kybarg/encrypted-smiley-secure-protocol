@@ -1,4 +1,4 @@
-const SspLib = require('./src/index')
+import SSP from './src/index.js'
 const channels = [{ value: 0, country_code: 'XXX' }]
 
 const serialPortConfig = {
@@ -8,7 +8,7 @@ const serialPortConfig = {
   parity: 'none', // default: 'none'
 }
 
-const eSSP = new SspLib({
+const eSSP = new SSP({
   id: 0x00,
   debug: true, // default: false
   timeout: 3000, // default: 3000
@@ -61,9 +61,11 @@ eSSP
     }
     return
   })
-  .then(() => eSSP.command('SET_CHANNEL_INHIBITS', {
-    channels: Array(channels.length).fill(1),
-  }))
+  .then(() =>
+    eSSP.command('SET_CHANNEL_INHIBITS', {
+      channels: Array(channels.length).fill(1),
+    })
+  )
   .then(() => eSSP.enable())
   .then(() => {
     console.log('GO!!!')

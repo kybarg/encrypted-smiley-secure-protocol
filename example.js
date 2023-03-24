@@ -1,4 +1,4 @@
-import SSP from './src/index.js'
+const SSP =  require('./src/index.js');
 const channels = [{ value: 0, country_code: 'XXX' }]
 
 const serialPortConfig = {

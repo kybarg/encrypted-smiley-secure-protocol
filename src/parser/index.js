@@ -1,8 +1,8 @@
-import { Transform } from 'stream'
+const { Transform } = require('stream')
 
 const SSP_STX = 0x7f
 
-export class SSPParser extends Transform {
+class SSPParser extends Transform {
   constructor(options = {}) {
     super(options)
 
@@ -69,3 +69,5 @@ export class SSPParser extends Transform {
     cb()
   }
 }
+
+module.exports = { SSPParser }

@@ -1,6 +1,6 @@
-import sinon from 'sinon'
-import { assert } from 'chai'
-import { SSPParser } from './index'
+const { assert } =  require('chai');
+const sinon =  require('sinon');
+const { SSPParser } =  require('./index');
 
 describe('SSPParser', () => {
   it('transforms data to buffers split on a STX', () => {

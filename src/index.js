@@ -1,16 +1,14 @@
-import { SerialPort } from 'serialport'
-import { satisfies } from 'semver'
-import { once, EventEmitter } from 'node:events'
-import { generatePrimeSync } from 'crypto'
-import chalk from 'chalk'
-import { parseData, CRC16, randHexArray, argsToByte, int64LE, encrypt, decrypt } from './utils.js'
-import commandList from './command.js'
-import pkgJson from '../package.json' assert { type: 'json' }
-import { SSPParser } from './parser/index.js'
+const { SerialPort } = require('serialport')
+const { satisfies } = require('semver')
+const { once, EventEmitter } = require('node:events')
+const { generatePrimeSync } = require('crypto')
+const chalk = require('chalk')
+const { parseData, CRC16, randHexArray, argsToByte, int64LE, encrypt, decrypt } = require('./utils.js')
+const commandList = require('./command.js')
+const { engines } = require('../package.json')
+const { SSPParser } = require('./parser/index.js')
 
-const { engines } = pkgJson
-
-export default class SSP extends EventEmitter {
+class SSP extends EventEmitter {
   constructor(param) {
     super()
 
@@ -368,3 +366,5 @@ export default class SSP extends EventEmitter {
     }
   }
 }
+
+module.exports = SSP

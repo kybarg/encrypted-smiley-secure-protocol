@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   0: 'Banknote validator',
   3: 'Smart Hopper',
   6: 'SMART payout fitted',

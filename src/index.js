@@ -252,7 +252,7 @@ class SSP extends EventEmitter {
     }
 
     if (command === 'SYNC') {
-      this.sequence = 0x80
+      this.sequence = 0x00 // getSequence will chacnge it to 0x80 right away
     }
 
     this.commandSendAttempts = 0

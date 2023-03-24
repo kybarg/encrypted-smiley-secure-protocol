@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   RESET: {
     code: 1,
     encrypted: false,

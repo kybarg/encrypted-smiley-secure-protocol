@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   0: {
     name: 'NOTE_ACCEPTED',
     description: 'The banknote has been accepted. No reject has occured.',

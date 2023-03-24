@@ -1,12 +1,43 @@
-const statusDesc = require('./status_desc')
-const unitType = require('./unit_type')
-const rejectNote = require('./reject_note')
+import { createCipheriv, createDecipheriv } from 'crypto'
+import statusDesc from './status_desc.js'
+import unitType from './unit_type.js'
+import rejectNote from './reject_note.js'
 
-function randomInt(min, max) {
+/**
+ * Encrypt
+ *
+ * @param {Buffer} key
+ * @param {Buffer} data
+ * @returns
+ */
+export function encrypt(key, data) {
+  const cipher = createCipheriv('aes-128-ecb', key, null)
+  cipher.setAutoPadding(false)
+  const encryptedData = Buffer.concat([cipher.update(data), cipher.final()])
+
+  return encryptedData
+}
+
+/**
+ *  Decrypt
+ *
+ * @param {Buffer} key
+ * @param {Buffer} data
+ * @returns
+ */
+export function decrypt(key, data) {
+  const decipher = createDecipheriv('aes-128-ecb', key, null)
+  decipher.setAutoPadding(false)
+  const decryptedData = Buffer.concat([decipher.update(data), decipher.final()])
+
+  return decryptedData
+}
+
+export function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min
 }
 
-function CRC16(source) {
+export function CRC16(source) {
   const length = source.length
   const seed = 0xffff
   const poly = 0x8005
@@ -25,7 +56,7 @@ function CRC16(source) {
   return [crc & 0xff, (crc >> 8) & 0xff]
 }
 
-function randHexArray(length = 0) {
+export function randHexArray(length = 0) {
   const array = []
   for (let i = 1; i <= length; i++) {
     array.push(randomInt(0, 255))
@@ -33,7 +64,7 @@ function randHexArray(length = 0) {
   return array
 }
 
-function int64LE(number) {
+export function int64LE(number) {
   const buffer = Buffer.alloc(8)
   buffer.writeBigInt64LE(BigInt(number))
   return buffer
@@ -51,7 +82,7 @@ function int16LE(number) {
   return buffer
 }
 
-function argsToByte(command, args, protocolVersion) {
+export function argsToByte(command, args, protocolVersion) {
   if (args !== undefined) {
     if (command === 'SET_DENOMINATION_ROUTE') {
       if (protocolVersion >= 6) {
@@ -187,7 +218,7 @@ function argsToByte(command, args, protocolVersion) {
   return []
 }
 
-function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
+export function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
   const result = {
     success: data[0] === 0xf0,
     status: statusDesc[data[0]] !== undefined ? statusDesc[data[0]].name : 'UNDEFINED',
@@ -600,13 +631,4 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
   }
 
   return result
-}
-
-module.exports = {
-  parseData,
-  randomInt,
-  CRC16,
-  randHexArray,
-  argsToByte,
-  int64LE,
 }

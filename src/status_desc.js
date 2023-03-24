@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   176: {
     name: 'JAM_RECOVERY',
     description:

@@ -6,11 +6,16 @@ module.exports = {
     mocha: true,
     es6: true,
   },
+  parser: '@babel/eslint-parser',
   parserOptions: {
-    ecmaVersion: 12,
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    requireConfigFile: false,
+    babelOptions: {
+      plugins: ['@babel/plugin-syntax-import-assertions'],
+    },
   },
   globals: {
-    assert: false,
     makeTestFeature: false,
     shouldReject: false,
   },

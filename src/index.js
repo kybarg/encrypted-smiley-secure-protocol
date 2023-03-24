@@ -1,37 +1,21 @@
-const { SerialPort } = require('serialport')
-const EventEmitter = require('events')
-const crypto = require('crypto')
-const { parseData, CRC16, randHexArray, argsToByte, int64LE } = require('./utils')
-const commandList = require('./command')
-const chalk = require('chalk')
-const semver = require('semver')
-const pkg = require('../package.json')
-const ESSPProtocolParser = require('./parser')
+import { SerialPort } from 'serialport'
+import { satisfies } from 'semver'
+import { once, EventEmitter } from 'node:events'
+import { generatePrimeSync } from 'crypto'
+import chalk from 'chalk'
+import { parseData, CRC16, randHexArray, argsToByte, int64LE, encrypt, decrypt } from './utils.js'
+import commandList from './command.js'
+import pkgJson from '../package.json' assert { type: 'json' }
+import { SSPParser } from './parser/index.js'
 
-// Encrypt
-const encrypt = (key, message) => {
-  const cipher = crypto.createCipheriv('aes-128-ecb', key, null)
-  cipher.setAutoPadding(false)
-  const encryptedData = Buffer.concat([cipher.update(message), cipher.final()])
+const { engines } = pkgJson
 
-  return encryptedData
-}
-
-// Decrypt
-const decrypt = (key, data) => {
-  const decipher = crypto.createDecipheriv('aes-128-ecb', key, null)
-  decipher.setAutoPadding(false)
-  const decryptedData = Buffer.concat([decipher.update(data), decipher.final()])
-
-  return decryptedData
-}
-
-module.exports = class SSP extends EventEmitter {
+export default class SSP extends EventEmitter {
   constructor(param) {
     super()
 
-    if (!semver.satisfies(process.version, pkg.engines.node)) {
-      throw new Error(`Version Node.js must be ${pkg.engines.node}`)
+    if (!satisfies(process.version, engines.node)) {
+      throw new Error(`Version Node.js must be ${engines.node}`)
     }
 
     this.eventEmitter = new EventEmitter()
@@ -50,55 +34,44 @@ module.exports = class SSP extends EventEmitter {
       slaveIntKey: null,
       key: null,
     }
+
     this.sequence = 0x80
     this.count = 0
-    this.currentCommand = null
+    this.unit_type = null
     this.enabled = false
     this.polling = false
-    this.unit_type = null
-
     this.commandTimeout = null
+
+    this.processing = false
   }
 
-  open(port, param = {}) {
-    return new Promise((resolve, reject) => {
-      this.port = new SerialPort({
-        path: port,
-        baudRate: param.baudRate || 9600,
-        dataBits: param.dataBits || 8,
-        stopBits: param.stopBits || 2,
-        parity: param.parity || 'none',
-        highWaterMark: param.highWaterMark || 64 * 1024,
-        autoOpen: true,
-      })
-
-      const parser = this.port.pipe(new ESSPProtocolParser({ id: this.id }))
-      parser.on('data', buffer => {
-        if (this.debug) {
-          console.log('COM ->', chalk.yellow(buffer.toString('hex')), chalk.green(this.currentCommand))
-        }
-        this.eventEmitter.emit(this.currentCommand, buffer)
-      })
-
-      this.port.on('data', buffer => {
-        this.emit('DATA_RECEIVED', { command: this.currentCommand, data: [...buffer] })
-      })
-
-      this.port.on('error', error => {
-        reject(error)
-        this.emit('CLOSE')
-      })
-
-      this.port.on('close', error => {
-        reject(error)
-        this.emit('CLOSE')
-      })
-
-      this.port.on('open', () => {
-        resolve()
-        this.emit('OPEN')
-      })
+  async open(port, param = {}) {
+    this.port = new SerialPort({
+      path: port,
+      baudRate: param.baudRate || 9600,
+      dataBits: param.dataBits || 8,
+      stopBits: param.stopBits || 2,
+      parity: param.parity || 'none',
+      highWaterMark: param.highWaterMark || 64 * 1024,
+      autoOpen: true,
     })
+
+    await Promise.race([once(this.port, 'open'), once(this.port, 'close')])
+
+    this.port.on('data', buffer => {
+      this.emit('DATA_RECEIVED', { command: this.currentCommand, data: [...buffer] })
+    })
+
+    this.port.on('error', error => {
+      this.eventEmitter.emit('error', error)
+    })
+
+    this.parser = this.port.pipe(new SSPParser())
+    this.parser.on('data', buffer => {
+      this.eventEmitter.emit('DATA', buffer)
+    })
+
+    return
   }
 
   close() {
@@ -112,44 +85,36 @@ module.exports = class SSP extends EventEmitter {
     return this.id | this.sequence
   }
 
-  initEncryption() {
-    return new Promise((resolve, reject) => {
-      Promise.all([
-        BigInt(crypto.createDiffieHellman(16).getPrime().readUInt16BE()),
-        BigInt(crypto.createDiffieHellman(16).getPrime().readUInt16BE()),
-        BigInt(crypto.createDiffieHellman(16).getPrime().readUInt16BE()),
-      ])
-        .then(res => {
-          this.keys.generatorKey = res[0]
-          this.keys.modulusKey = res[1]
-          this.keys.hostRandom = res[2]
-          this.keys.hostIntKey = this.keys.generatorKey ** this.keys.hostRandom % this.keys.modulusKey
-          return
-        })
-        .then(() => this.exec('SET_GENERATOR', int64LE(this.keys.generatorKey)))
-        .then(result => {
-          if (!result || !result.success) {
-            return reject(result)
-          }
+  /**
+   * Exchange encryption keys
+   *
+   * @returns {Promise} result
+   */
+  async initEncryption() {
+    this.keys.generatorKey = generatePrimeSync(16, { bigint: true, safe: true })
+    this.keys.modulusKey = generatePrimeSync(16, { bigint: true, safe: true })
+    this.keys.hostRandom = generatePrimeSync(16, { bigint: true, safe: true })
+    this.keys.hostIntKey = this.keys.generatorKey ** this.keys.hostRandom % this.keys.modulusKey
 
-          return this.exec('SET_MODULUS', int64LE(this.keys.modulusKey))
-        })
-        .then(result => {
-          if (!result || !result.success) {
-            return reject(result)
-          }
+    const commands = [
+      { command: 'SET_GENERATOR', args: int64LE(this.keys.generatorKey) },
+      { command: 'SET_MODULUS', args: int64LE(this.keys.modulusKey) },
+      { command: 'REQUEST_KEY_EXCHANGE', args: int64LE(this.keys.hostIntKey) },
+    ]
 
-          return this.exec('REQUEST_KEY_EXCHANGE', int64LE(this.keys.hostIntKey))
-        })
-        .then(result => {
-          if (!result || !result.success) {
-            return reject(result)
-          }
+    let result
+    for (const { command, args } of commands) {
+      const buffer = this.getPacket(command, args)
 
-          this.count = 0
-          resolve(result)
-        })
-    })
+      result = await this.sendToDevice(command, buffer)
+      if (!result || !result.success) {
+        throw result
+      }
+    }
+
+    this.count = 0
+
+    return result
   }
 
   getPacket(command, args) {
@@ -157,7 +122,7 @@ module.exports = class SSP extends EventEmitter {
     const STEX = 0x7e
 
     if (commandList[command].args && args.length === 0) {
-      throw new Error('args missings')
+      throw new Error('Args missings')
     }
 
     let LENGTH = args.length + 1
@@ -182,73 +147,10 @@ module.exports = class SSP extends EventEmitter {
     const tmp = [SEQ_SLAVE_ID].concat(LENGTH, DATA)
     const comandLine = Buffer.from([STX].concat(tmp, CRC16(tmp)).join(',').replace(/,127/g, ',127,127').split(','))
 
-    if (this.debug) {
-      console.log('COM <-', chalk.cyan(comandLine.toString('hex')), chalk.green(this.currentCommand), this.count)
-    }
-
     return comandLine
   }
 
-  getPromise(buffer, command) {
-    this.currentCommand = command
-    this.emit('DATA_SENT', { command, data: [...buffer] })
-    return new Promise(resolve => {
-      this.port.write(buffer)
-      this.port.drain()
-      if (command === 'SYNC') {
-        this.sequence = 0x80
-      }
-      return resolve(this.newEvent(command))
-    }).then(res => {
-      return res.status === 'TIMEOUT' ? this.getPromise(buffer, command) : res
-    })
-  }
-
-  exec(command, args = []) {
-    command = command.toUpperCase()
-    if (commandList[command] === undefined) {
-      throw new Error('command not found')
-    }
-    const buffer = Buffer.from(this.getPacket(command, args))
-    return this.getPromise(buffer, command)
-  }
-
-  newEvent(command) {
-    return new Promise(resolve => {
-      this.eventEmitter.once(command, buffer => {
-        clearTimeout(this.commandTimeout)
-
-        if (Buffer.isBuffer(buffer)) {
-          resolve(this.parsePacket(buffer))
-        } else if (buffer === 'TIMEOUT') {
-          if (this.debug) {
-            console.log(chalk.red(`TIMEOUT ${command}`))
-          }
-
-          resolve({
-            success: false,
-            status: 'TIMEOUT',
-            command,
-            info: {},
-          })
-        }
-      })
-
-      this.commandTimeout = setTimeout(() => {
-        this.eventEmitter.emit(command, 'TIMEOUT')
-        this.currentCommand = null
-      }, parseInt(this.timeout))
-    }).then(
-      res =>
-        new Promise(resolve => {
-          setTimeout(() => {
-            resolve(res)
-          }, 100)
-        })
-    )
-  }
-
-  parsePacket(buffer) {
+  parsePacket(buffer, command) {
     buffer = [...buffer]
     if (buffer[0] === 0x7f) {
       buffer = buffer.slice(1)
@@ -256,8 +158,9 @@ module.exports = class SSP extends EventEmitter {
       const CRC = CRC16(buffer.slice(0, buffer[1] + 2))
 
       if (CRC[0] !== buffer[buffer.length - 2] || CRC[1] !== buffer[buffer.length - 1]) {
-        return { success: false, error: 'Wrong CRC16' }
+        throw new Error('Wrong CRC16')
       }
+
       if (this.keys.key !== null && DATA[0] === 0x7e) {
         DATA = decrypt(this.encryptKey, Buffer.from(DATA.slice(1)))
         if (this.debug) {
@@ -266,40 +169,46 @@ module.exports = class SSP extends EventEmitter {
         const eLENGTH = DATA[0]
         const eCOUNT = Buffer.from(DATA.slice(1, 5)).readInt32LE()
         DATA = DATA.slice(5, eLENGTH + 5)
-        this.count = eCOUNT
+
+        if (eCOUNT !== this.count + 1) {
+          throw new Error('Encrypted counter mismatch')
+        }
+
+        this.count += 1
       }
 
-      const parsedData = parseData(DATA, this.currentCommand, this.protocol_version, this.unit_type)
+      const parsedData = parseData(DATA, command, this.protocol_version, this.unit_type)
 
       if (this.debug) {
         console.log(parsedData)
       }
 
       if (parsedData.success) {
-        if (this.currentCommand === 'REQUEST_KEY_EXCHANGE') {
+        if (command === 'REQUEST_KEY_EXCHANGE') {
           try {
             this.createHostEncryptionKeys(parsedData.info.key)
           } catch (error) {
-            return { success: false, error: 'Key exchange error', buffer }
+            throw new Error('Key exchange error')
           }
-        } else if (this.currentCommand === 'SETUP_REQUEST') {
+        } else if (command === 'SETUP_REQUEST') {
           this.protocol_version = parsedData.info.protocol_version
           this.unit_type = parsedData.info.unit_type
-        } else if (this.currentCommand === 'UNIT_DATA') {
+        } else if (command === 'UNIT_DATA') {
           this.unit_type = parsedData.info.unit_type
         }
       }
 
       return parsedData
     }
-    return { success: false, error: 'Unknown response' }
+
+    throw new Error('Unknown response')
   }
 
   createHostEncryptionKeys(data) {
     if (this.keys.key === null) {
       this.keys.slaveIntKey = Buffer.from(data).readBigInt64LE()
       this.keys.key = this.keys.slaveIntKey ** this.keys.hostRandom % this.keys.modulusKey
-      this.encryptKey = Buffer.concat([int64LE(Buffer.from(this.keys.fixedKey, 'hex').readBigInt64BE()), int64LE(this.keys.key)])
+      this.encryptKey = Buffer.concat([Buffer.from(this.keys.fixedKey, 'hex').swap64(), int64LE(this.keys.key)])
 
       this.count = 0
       if (this.debug) {
@@ -311,53 +220,133 @@ module.exports = class SSP extends EventEmitter {
     }
   }
 
-  enable() {
-    let result
-    return this.command('ENABLE')
-      .then(res => {
-        result = res
-        if (res.status === 'OK') {
-          this.enabled = true
-          if (!this.polling) return this.poll(true)
-        }
-        return
-      })
-      .then(() => result)
-  }
+  async enable() {
+    const result = await this.command('ENABLE')
 
-  disable() {
-    let result
-    return this.command('DISABLE')
-      .then(res => {
-        result = res
-        if (res.status === 'OK') {
-          this.enabled = false
-        }
-        return this.poll(false)
-      })
-      .then(() => result)
-  }
-
-  command(command, args) {
-    if (this.enabled) {
-      let result = null
-
-      return this.poll(false)
-        .then(() => this.exec(command, argsToByte(command, args, this.protocol_version)))
-        .then(res => {
-          result = res
-          if (!this.polling) return this.poll(true)
-          return () => {}
-        })
-        .then(() => result)
+    if (result.status === 'OK') {
+      this.enabled = true
+      if (!this.polling) await this.poll(true)
     }
-    return this.exec(command, argsToByte(command, args, this.protocol_version))
+
+    return result
   }
 
-  poll(status = true) {
-    if (status) {
+  async disable() {
+    if (this.polling) await this.poll(false)
+
+    const result = await this.command('DISABLE')
+
+    if (result.status === 'OK') {
+      this.enabled = false
+    }
+
+    return result
+  }
+
+  async command(command, args) {
+    command = command.toUpperCase()
+    if (commandList[command] === undefined) {
+      throw new Error('Command not found')
+    }
+
+    if (this.processing) {
+      throw new Error('Already processing another command')
+    }
+
+    if (command === 'SYNC') {
+      this.sequence = 0x80
+    }
+
+    this.commandSendAttempts = 0
+
+    const buffer = this.getPacket(command, argsToByte(command, args, this.protocol_version))
+    const result = await this.sendToDevice(command, buffer)
+
+    if (!result.success) {
+      throw result
+    }
+
+    return result
+  }
+
+  async sendToDevice(command, txBuffer) {
+    this.processing = true
+    if (this.debug) {
+      console.log('COM <-', chalk.cyan(txBuffer.toString('hex')), chalk.green(command), this.count, Date.now())
+    }
+
+    // Wait 1 second for reply.
+    this.commandTimeout = setTimeout(() => {
+      this.eventEmitter.emit('error', {
+        success: false,
+        status: 'TIMEOUT',
+        command,
+      })
+    }, this.timeout)
+
+    try {
+      this.port.write(txBuffer)
+      this.port.drain()
+      this.commandSendAttempts += 1
+
+      const [rxBuffer] = await once(this.eventEmitter, 'DATA')
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      this.processing = false
+      clearTimeout(this.commandTimeout)
+
+      if (this.debug) {
+        console.log('COM ->', chalk.yellow(rxBuffer.toString('hex')), chalk.green(command), this.count, Date.now())
+      }
+
+      try {
+        return this.parsePacket(rxBuffer, command)
+      } catch (error) {
+        return {
+          success: false,
+          error,
+        }
+      }
+    } catch (error) {
+      this.processing = false
+
+      // Retry sending same command
+      // After 20 retries, the master will assume that the slave has crashed.
+      if (this.commandSendAttempts < 20) {
+        return this.sendToDevice(command, txBuffer)
+      } else {
+        throw {
+          success: false,
+          error: 'Command failed afte 20 retries',
+          reason: error,
+        }
+      }
+    }
+  }
+
+  async poll(status = null) {
+    clearTimeout(this.pollTimeout)
+
+    if (status === true) {
       this.polling = true
-      return this.exec('POLL').then(result => {
+    } else if (status === false) {
+      this.polling = false
+
+      return new Promise(resolve => {
+        const interval = setInterval(() => {
+          if (!this.processing) {
+            clearInterval(interval)
+            resolve()
+          }
+        }, 1)
+      })
+    }
+
+    if (this.polling) {
+      try {
+        const startTime = Date.now()
+        const result = await this.command('POLL')
+
         if (result.info) {
           let res = result.info
           if (!Array.isArray(result.info)) res = [result.info]
@@ -366,25 +355,16 @@ module.exports = class SSP extends EventEmitter {
             this.emit(info.name, info)
           })
         }
+        const endTime = Date.now()
+        const executionTime = endTime - startTime
+        this.pollTimeout = setTimeout(() => this.poll(), executionTime >= 200 ? 0 : 200 - executionTime)
 
-        if (this.polling) {
-          this.poll()
-        } else {
-          this.eventEmitter.emit('POLL_STOP')
-        }
-        return
-      })
+        return result
+      } catch (error) {
+        this.polling = false
+
+        return error
+      }
     }
-    if (this.polling !== false) {
-      this.polling = false
-      return new Promise(resolve => {
-        this.eventEmitter.once('POLL_STOP', () => {
-          resolve()
-        })
-      })
-    }
-    return new Promise(resolve => {
-      resolve()
-    })
   }
 }

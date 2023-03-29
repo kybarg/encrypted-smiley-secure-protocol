@@ -1,12 +1,12 @@
-const { SerialPort } = require('serialport')
-const { satisfies } = require('semver')
+const { generatePrimeSync } = require('node:crypto')
 const { once, EventEmitter } = require('node:events')
-const { generatePrimeSync } = require('crypto')
+const { satisfies } = require('semver')
+const { SerialPort } = require('serialport')
 const chalk = require('chalk')
 const { parseData, CRC16, randHexArray, argsToByte, int64LE, encrypt, decrypt } = require('./utils.js')
 const commandList = require('./command.js')
-const { engines } = require('../package.json')
 const { SSPParser } = require('./parser/index.js')
+const { engines } = require('../package.json')
 
 class SSP extends EventEmitter {
   constructor(param) {
@@ -79,7 +79,6 @@ class SSP extends EventEmitter {
   }
 
   getSequence() {
-    this.sequence = this.sequence === 0x00 ? 0x80 : 0x00
     return this.id | this.sequence
   }
 
@@ -95,16 +94,14 @@ class SSP extends EventEmitter {
     this.keys.hostIntKey = this.keys.generatorKey ** this.keys.hostRandom % this.keys.modulusKey
 
     const commands = [
-      { command: 'SET_GENERATOR', args: int64LE(this.keys.generatorKey) },
-      { command: 'SET_MODULUS', args: int64LE(this.keys.modulusKey) },
-      { command: 'REQUEST_KEY_EXCHANGE', args: int64LE(this.keys.hostIntKey) },
+      { command: 'SET_GENERATOR', args: { key: this.keys.generatorKey } },
+      { command: 'SET_MODULUS', args: { key: this.keys.modulusKey } },
+      { command: 'REQUEST_KEY_EXCHANGE', args: { key: this.keys.hostIntKey } },
     ]
 
     let result
     for (const { command, args } of commands) {
-      const buffer = this.getPacket(command, args)
-
-      result = await this.sendToDevice(command, buffer)
+      result = await this.command(command, args)
       if (!result || !result.success) {
         throw result
       }
@@ -194,6 +191,10 @@ class SSP extends EventEmitter {
         } else if (command === 'UNIT_DATA') {
           this.unit_type = parsedData.info.unit_type
         }
+      } else {
+        if (command === 'HOST_PROTOCOL_VERSION') {
+          this.protocol_version = undefined
+        }
       }
 
       return parsedData
@@ -255,10 +256,17 @@ class SSP extends EventEmitter {
       this.sequence = 0x00 // getSequence will chacnge it to 0x80 right away
     }
 
+    if (command === 'HOST_PROTOCOL_VERSION') {
+      this.protocol_version = args.version
+    }
+
     this.commandSendAttempts = 0
 
     const buffer = this.getPacket(command, argsToByte(command, args, this.protocol_version))
     const result = await this.sendToDevice(command, buffer)
+
+    // update sequence after response received
+    this.sequence = this.sequence === 0x00 ? 0x80 : 0x00
 
     if (!result.success) {
       throw result

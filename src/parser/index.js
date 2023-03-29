@@ -1,4 +1,4 @@
-const { Transform } = require('stream')
+const { Transform } = require('node:stream')
 
 const SSP_STX = 0x7f
 

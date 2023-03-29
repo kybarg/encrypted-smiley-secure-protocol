@@ -1,7 +1,7 @@
-const { createCipheriv, createDecipheriv } =  require('crypto');
-const statusDesc =  require('./status_desc.js');
-const unitType =  require('./unit_type.js');
-const rejectNote =  require('./reject_note.js');
+const { createCipheriv, createDecipheriv } = require('crypto')
+const statusDesc = require('./status_desc.js')
+const unitType = require('./unit_type.js')
+const rejectNote = require('./reject_note.js')
 
 /**
  * Encrypt
@@ -84,7 +84,9 @@ function int16LE(number) {
 
 function argsToByte(command, args, protocolVersion) {
   if (args !== undefined) {
-    if (command === 'SET_DENOMINATION_ROUTE') {
+    if (['SET_GENERATOR', 'SET_MODULUS', 'REQUEST_KEY_EXCHANGE'].includes(command)) {
+      return [...int64LE(args.key)]
+    } else if (command === 'SET_DENOMINATION_ROUTE') {
       if (protocolVersion >= 6) {
         return [args.route === 'payout' ? 0 : 1].concat([...int32LE(args.value)], [...Buffer.from(args.country_code, 'ascii')])
       }
@@ -227,7 +229,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
   }
 
   if (result.success) {
-    data = data.slice(1)
+    data = [...data.slice(1)]
 
     if (currentCommand === 'REQUEST_KEY_EXCHANGE') {
       result.info.key = data

@@ -248,6 +248,10 @@ class SSP extends EventEmitter {
       throw new Error('Command not found')
     }
 
+    if(this.polling) {
+      await this.poll(false)
+    }
+
     if (this.processing) {
       throw new Error('Already processing another command')
     }

@@ -373,7 +373,7 @@ class SSP extends EventEmitter {
       } catch (error) {
         this.polling = false
 
-        return error
+        throw error
       }
     }
   }

@@ -2,13 +2,13 @@
   "name": "encrypted-smiley-secure-protocol",
   "version": "0.0.11",
   "description": "Node.JS library Encrypted Smiley ® Secure Protocol (eSSP, SSP)",
-  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:watch": "mocha -w",
     "lint": "eslint src && npx prettier --check ."
   },
   "engines": {
-    "node": ">=10.4.0"
+    "npm": ">=8.0.0",
+    "node": ">=16.14.0"
   },
   "repository": {
     "type": "git",
@@ -30,15 +30,21 @@
   },
   "homepage": "https://github.com/skokov3812/encrypted-smiley-secure-protocol#readme",
   "dependencies": {
-    "chalk": "^2.4.2",
-    "debug": "^4.3.1",
-    "semver": "^7.3.5",
+    "chalk": "^4.1.2",
+    "debug": "^4.3.4",
+    "semver": "^7.3.8",
     "serialport": "^10.5.0"
   },
   "devDependencies": {
-    "eslint": "^7.25.0",
-    "eslint-config-prettier": "^8.6.0",
+    "@babel/eslint-parser": "^7.21.3",
+    "@babel/plugin-syntax-import-assertions": "^7.20.0",
+    "chai": "^4.3.7",
+    "esbuild-register": "^3.4.2",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.7.0",
     "eslint-plugin-mocha": "^10.1.0",
-    "eslint-plugin-node": "^11.1.0"
+    "eslint-plugin-node": "^11.1.0",
+    "mocha": "^10.2.0",
+    "sinon": "^15.0.2"
   }
 }

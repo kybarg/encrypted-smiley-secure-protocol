@@ -1,9 +1,9 @@
-const { generatePrimeSync } = require('node:crypto')
+const { generatePrimeSync, randomBytes } = require('node:crypto')
 const { once, EventEmitter } = require('node:events')
 const { satisfies } = require('semver')
 const { SerialPort } = require('serialport')
 const chalk = require('chalk')
-const { parseData, CRC16, randHexArray, argsToByte, int64LE, encrypt, decrypt } = require('./utils.js')
+const { parseData, CRC16, randHexArray, argsToByte, int64LE, encrypt, decrypt, absBigInt } = require('./utils.js')
 const commandList = require('./command.js')
 const { SSPParser } = require('./parser/index.js')
 const { engines } = require('../package.json')
@@ -25,11 +25,11 @@ class SSP extends EventEmitter {
     this.encryptKey = null
     this.keys = {
       fixedKey: param.fixedKey || '0123456701234567',
-      generatorKey: null,
-      modulusKey: null,
+      generator: null,
+      modulus: null,
       hostRandom: null,
-      hostIntKey: null,
-      slaveIntKey: null,
+      hostInter: null,
+      slaveInterKey: null,
       key: null,
     }
 
@@ -41,6 +41,9 @@ class SSP extends EventEmitter {
     this.commandTimeout = null
 
     this.processing = false
+
+    // this.protocol_version = 8
+    // this.unit_type = 'sdfas'
   }
 
   async open(port, param = {}) {
@@ -88,15 +91,14 @@ class SSP extends EventEmitter {
    * @returns {Promise} result
    */
   async initEncryption() {
-    this.keys.generatorKey = generatePrimeSync(16, { bigint: true, safe: true })
-    this.keys.modulusKey = generatePrimeSync(16, { bigint: true, safe: true })
-    this.keys.hostRandom = generatePrimeSync(16, { bigint: true, safe: true })
-    this.keys.hostIntKey = this.keys.generatorKey ** this.keys.hostRandom % this.keys.modulusKey
+    if (!this.initiateSSPHostKeys()) {
+      throw new Error('Failed to generate keys')
+    }
 
     const commands = [
-      { command: 'SET_GENERATOR', args: { key: this.keys.generatorKey } },
-      { command: 'SET_MODULUS', args: { key: this.keys.modulusKey } },
-      { command: 'REQUEST_KEY_EXCHANGE', args: { key: this.keys.hostIntKey } },
+      { command: 'SET_GENERATOR', args: { key: this.keys.generator } },
+      { command: 'SET_MODULUS', args: { key: this.keys.modulus } },
+      { command: 'REQUEST_KEY_EXCHANGE', args: { key: this.keys.hostInter } },
     ]
 
     let result
@@ -181,7 +183,7 @@ class SSP extends EventEmitter {
       if (parsedData.success) {
         if (command === 'REQUEST_KEY_EXCHANGE') {
           try {
-            this.createHostEncryptionKeys(parsedData.info.key)
+            this.createSSPHostEncryptionKey(parsedData.info.key)
           } catch (error) {
             throw new Error('Key exchange error')
           }
@@ -203,10 +205,36 @@ class SSP extends EventEmitter {
     throw new Error('Unknown response')
   }
 
-  createHostEncryptionKeys(data) {
+  initiateSSPHostKeys() {
+    this.keys.generator = generatePrimeSync(16, { bigint: true, safe: true })
+    this.keys.modulus = generatePrimeSync(16, { bigint: true, safe: true })
+    if (this.keys.generator < this.keys.modulus) {
+      ;[this.keys.modulus, this.keys.generator] = [this.keys.generator, this.keys.modulus]
+    }
+
+    if (!this.createhostInterKey()) {
+      return false
+    }
+
+    this.count = 0
+
+    return true
+  }
+
+  createhostInterKey() {
+    if (this.keys.generator === 0n || this.keys.modulus === 0n) {
+      return false
+    }
+
+    this.keys.hostRandom = absBigInt(BigInt(randomBytes(64).readInt16LE())) % 32767n
+    this.keys.hostInter = this.keys.generator ** this.keys.hostRandom % this.keys.modulus
+    return true
+  }
+
+  createSSPHostEncryptionKey(data) {
     if (this.keys.key === null) {
-      this.keys.slaveIntKey = Buffer.from(data).readBigInt64LE()
-      this.keys.key = this.keys.slaveIntKey ** this.keys.hostRandom % this.keys.modulusKey
+      this.keys.slaveInterKey = Buffer.from(data).readBigInt64LE()
+      this.keys.key = this.keys.slaveInterKey ** this.keys.hostRandom % this.keys.modulus
       this.encryptKey = Buffer.concat([Buffer.from(this.keys.fixedKey, 'hex').swap64(), int64LE(this.keys.key)])
 
       this.count = 0
@@ -253,7 +281,7 @@ class SSP extends EventEmitter {
     }
 
     if (command === 'SYNC') {
-      this.sequence = 0x00 // getSequence will chacnge it to 0x80 right away
+      this.sequence = 0x80
     }
 
     if (command === 'HOST_PROTOCOL_VERSION') {

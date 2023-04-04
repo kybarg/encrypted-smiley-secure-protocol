@@ -3,6 +3,8 @@ const statusDesc = require('./status_desc.js')
 const unitType = require('./unit_type.js')
 const rejectNote = require('./reject_note.js')
 
+const absBigInt = n => (n < 0n ? -n : n)
+
 /**
  * Encrypt
  *
@@ -65,6 +67,12 @@ function randHexArray(length = 0) {
 }
 
 function int64LE(number) {
+  const buffer = Buffer.alloc(8)
+  buffer.writeBigInt64LE(BigInt(number))
+  return buffer
+}
+
+function int64BE(number) {
   const buffer = Buffer.alloc(8)
   buffer.writeBigInt64LE(BigInt(number))
   return buffer
@@ -440,7 +448,6 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
             info.name === 'SMART_EMPTYING' ||
             info.name === 'SMART_EMPTIED' ||
             info.name === 'ERROR_DURING_PAYOUT' ||
-            info.name === 'NOTE_TRANSFERED_TO_STACKER' ||
             info.name === 'NOTE_PAID_INTO_STORE_AT_POWER-UP' ||
             info.name === 'NOTE_PAID_INTO_STACKER_AT_POWER-UP' ||
             info.name === 'NOTE_DISPENSED_AT_POWER-UP'
@@ -458,6 +465,17 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
                 info.errorCode = chunk[count * 7 + 1] === 0 ? 'wrong_recognition' : 'jammed'
               }
               k += 1 + count * 7
+            } else {
+              info.value = Buffer.from(chunk.slice(0, 4)).readInt32LE()
+              k += 5
+            }
+          } else if (info.name === 'NOTE_TRANSFERED_TO_STACKER') {
+            if (protocolVersion >= 6) {
+              info.value = {
+                value: Buffer.from(chunk.slice(1, 5)).readInt32LE(),
+                country_code: Buffer.from(chunk.slice(5, 8)).toString(),
+              }
+              k += 8
             } else {
               info.value = Buffer.from(chunk.slice(0, 4)).readInt32LE()
               k += 5
@@ -512,7 +530,6 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
         }
       } else if (currentCommand === 'CASHBOX_PAYOUT_OPERATION_DATA') {
         result.info = { res: {} }
-        console.log(data)
         for (let i = 0; i < data[0]; i++) {
           result.info.res[i] = {
             quantity: Buffer.from(data.slice(i * 9 + 2, i * 9 + 4)).readInt16LE(),
@@ -636,6 +653,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
 }
 
 module.exports = {
+  absBigInt,
   encrypt,
   decrypt,
   parseData,

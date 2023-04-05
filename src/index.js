@@ -359,7 +359,7 @@ class SSP extends EventEmitter {
   }
 
   async poll(status = null) {
-    clearTimeout(this.pollTimeout)
+    if (status === true && this.polling === true) return Promise.resolve()
 
     if (status === true) {
       this.polling = true

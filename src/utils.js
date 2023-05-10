@@ -373,7 +373,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
       for (let i = 0; i < count; i++) {
         result.info.device[i] = {
           unitType: unitType[data[i * 3]],
-          revision: Buffer.from(data.slice(i * 3 + 1, i * 3 + 3)).readInt16BE(),
+          revision: Buffer.from(data.slice(i * 3 + 1, i * 3 + 3)).readInt16LE(),
         }
       }
     } else if (currentCommand === 'GET_COUNTERS') {
@@ -383,7 +383,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
       result.info.transferred_from_store_to_stacker = Buffer.from(data.slice(13, 17)).readInt32LE()
       result.info.rejected = Buffer.from(data.slice(17, 21)).readInt32LE()
     } else if (currentCommand === 'GET_HOPPER_OPTIONS') {
-      const tmp = Buffer.from(data.slice(1, 3)).readInt16LE().toString(2).split('').reverse()
+      const tmp = Buffer.from(data.slice(0, 2)).readInt16LE().toString(2).split('').reverse()
       result.info.payMode = tmp[0] === 0 || tmp[0] === undefined ? false : true
       result.info.levelCheck = tmp[1] === 0 || tmp[1] === undefined ? false : true
       result.info.motorSpeed = tmp[2] === 0 || tmp[2] === undefined ? false : true
@@ -419,12 +419,12 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
           } else if (info.name === 'FRAUD_ATTEMPT') {
             const smartDevice = [unitType[3], unitType[6]].includes(deviceUnitType)
             if (protocolVersion >= 6 && smartDevice) {
-              const count = Math.floor(chunk.length / 6)
+              const count = chunk[1]
               info.value = []
               for (let i = 0; i < count; i++) {
                 info.value[i] = {
-                  value: Buffer.from(chunk.slice(i * 7 + 1, i * 7 + 5)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 7 + 5, i * 7 + 8)).toString(),
+                  value: Buffer.from(chunk.slice(i * 7 + 2, i * 7 + 6)).readInt32LE(),
+                  country_code: Buffer.from(chunk.slice(i * 7 + 6, i * 7 + 9)).toString(),
                 }
               }
               k += 1 + count * 7
@@ -446,11 +446,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
             info.name === 'CASHBOX_PAID' ||
             info.name === 'COIN_CREDIT' ||
             info.name === 'SMART_EMPTYING' ||
-            info.name === 'SMART_EMPTIED' ||
-            info.name === 'ERROR_DURING_PAYOUT' ||
-            info.name === 'NOTE_PAID_INTO_STORE_AT_POWER-UP' ||
-            info.name === 'NOTE_PAID_INTO_STACKER_AT_POWER-UP' ||
-            info.name === 'NOTE_DISPENSED_AT_POWER-UP'
+            info.name === 'SMART_EMPTIED'
           ) {
             if (protocolVersion >= 6) {
               const count = chunk[1]
@@ -461,13 +457,24 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
                   country_code: Buffer.from(chunk.slice(i * 7 + 6, i * 7 + 9)).toString(),
                 }
               }
-              if (info.name === 'ERROR_DURING_PAYOUT') {
-                info.errorCode = chunk[count * 7 + 1] === 0 ? 'wrong_recognition' : 'jammed'
-              }
               k += 1 + count * 7
             } else {
-              info.value = Buffer.from(chunk.slice(0, 4)).readInt32LE()
+              info.value = Buffer.from(chunk.slice(1, 5)).readInt32LE()
               k += 5
+            }
+          } else if (info.name === 'ERROR_DURING_PAYOUT') {
+            if (protocolVersion >= 7) {
+              const count = chunk[1]
+              info.value = []
+              for (let i = 0; i < count; i++) {
+                info.value[i] = {
+                  value: Buffer.from(chunk.slice(i * 7 + 2, i * 7 + 6)).readInt32LE(),
+                  country_code: Buffer.from(chunk.slice(i * 7 + 6, i * 7 + 9)).toString(),
+                }
+              }
+              info.errorCode = chunk[count * 7 + 2] === 0 ? 'wrong_recognition' : 'jammed'
+
+              k += 2 + count * 7
             }
           } else if (info.name === 'NOTE_TRANSFERED_TO_STACKER') {
             if (protocolVersion >= 6) {
@@ -480,12 +487,19 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
               info.value = Buffer.from(chunk.slice(0, 4)).readInt32LE()
               k += 5
             }
-          } else if (info.name === 'NOTE_HELD_IN_BEZEL') {
-            info.value = {
-              value: Buffer.from(chunk.slice(1, 5)).readInt32LE(),
-              country_code: Buffer.from(chunk.slice(5, 8)).toString(),
+          } else if (
+            info.name === 'NOTE_HELD_IN_BEZEL' ||
+            info.name === 'NOTE_PAID_INTO_STACKER_AT_POWER-UP' ||
+            info.name === 'NOTE_PAID_INTO_STORE_AT_POWER-UP' ||
+            info.name === 'NOTE_DISPENSED_AT_POWER-UP'
+          ) {
+            if (protocolVersion >= 8) {
+              info.value = {
+                value: Buffer.from(chunk.slice(1, 5)).readInt32LE(),
+                country_code: Buffer.from(chunk.slice(5, 8)).toString(),
+              }
+              k += 8
             }
-            k += 8
           } else if (info.name === 'INCOMPLETE_PAYOUT') {
             if (protocolVersion < 6) {
               info.dispensed = Buffer.from(chunk.slice(1, 5)).readInt32LE()
@@ -496,9 +510,9 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
               info.value = []
               for (let i = 0; i < count; i++) {
                 info.value[i] = {
-                  dispensed: Buffer.from(chunk.slice(i * 11 + 1, i * 11 + 5)).readInt32LE(),
-                  requested: Buffer.from(chunk.slice(i * 11 + 5, i * 11 + 9)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 11 + 9, i * 11 + 12)).toString(),
+                  dispensed: Buffer.from(chunk.slice(i * 11 + 2, i * 11 + 6)).readInt32LE(),
+                  requested: Buffer.from(chunk.slice(i * 11 + 6, i * 11 + 10)).readInt32LE(),
+                  country_code: Buffer.from(chunk.slice(i * 11 + 10, i * 11 + 13)).toString(),
                 }
               }
 
@@ -514,9 +528,9 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
               info.value = []
               for (let i = 0; i < count; i++) {
                 info.value[i] = {
-                  floated: Buffer.from(chunk.slice(i * 11 + 1, i * 11 + 5)).readInt32LE(),
-                  requested: Buffer.from(chunk.slice(i * 11 + 5, i * 11 + 9)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 11 + 9, i * 11 + 12)).toString(),
+                  floated: Buffer.from(chunk.slice(i * 11 + 2, i * 11 + 6)).readInt32LE(),
+                  requested: Buffer.from(chunk.slice(i * 11 + 6, i * 11 + 10)).readInt32LE(),
+                  country_code: Buffer.from(chunk.slice(i * 11 + 10, i * 11 + 13)).toString(),
                 }
               }
 
@@ -528,15 +542,19 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
 
           result.info.push(info)
         }
-      } else if (currentCommand === 'CASHBOX_PAYOUT_OPERATION_DATA') {
-        result.info = { res: {} }
-        for (let i = 0; i < data[0]; i++) {
-          result.info.res[i] = {
-            quantity: Buffer.from(data.slice(i * 9 + 2, i * 9 + 4)).readInt16LE(),
-            value: Buffer.from(data.slice(i * 9 + 4, i * 9 + 8)).readInt32LE(),
-            country_code: Buffer.from(data.slice(i * 9 + 8, i * 9 + 11)).toString(),
-          }
+      }
+    } else if (currentCommand === 'CASHBOX_PAYOUT_OPERATION_DATA') {
+      result.info = { data: [] }
+      for (let i = 0; i < data[0]; i++) {
+        result.info.data[i] = {
+          quantity: Buffer.from(data.slice(i * 9 + 1, i * 9 + 3)).readInt16LE(),
+          value: Buffer.from(data.slice(i * 9 + 3, i * 9 + 7)).readInt32LE(),
+          country_code: Buffer.from(data.slice(i * 9 + 7, i * 9 + 10)).toString(),
         }
+      }
+    } else if (currentCommand === 'SET_REFILL_MODE' && data.length === 1) {
+      result.info = {
+        enabled: data[0] === 0x01,
       }
     }
   } else {
@@ -568,10 +586,10 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
     ) {
       result.info.errorCode = data[1]
       switch (data[1]) {
-        case 1:
+        case 0:
           result.info.error = 'Not enough value in device'
           break
-        case 2:
+        case 1:
           result.info.error = 'Cannot pay exact amount'
           break
         case 3:
@@ -606,10 +624,10 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
     } else if (result.status === 'COMMAND_CANNOT_BE_PROCESSED' && currentCommand === 'FLOAT_BY_DENOMINATION') {
       result.info.errorCode = data[1]
       switch (data[1]) {
-        case 1:
+        case 0:
           result.info.error = 'Not enough value in device'
           break
-        case 2:
+        case 1:
           result.info.error = 'Cannot pay exact amount'
           break
         case 3:

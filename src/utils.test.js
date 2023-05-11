@@ -3,12 +3,10 @@ const { test } = require('mocha')
 const { parseData } = require('./utils')
 
 describe('parseData', () => {
-  const deviceUnitType = 'SMART payout fitted'
-  const protocolVersion = 6
   describe('GENERIC responses', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -20,7 +18,7 @@ describe('parseData', () => {
 
     test('COMMAND_NOT_KNOWN', () => {
       const data = [0xf2]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -32,7 +30,7 @@ describe('parseData', () => {
 
     test('WRONG_NO_PARAMETERS', () => {
       const data = [0xf3]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -44,7 +42,7 @@ describe('parseData', () => {
 
     test('PARAMETER_OUT_OF_RANGE', () => {
       const data = [0xf4]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -56,7 +54,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED', () => {
       const data = [0xf5]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -68,7 +66,7 @@ describe('parseData', () => {
 
     test('SOFTWARE_ERROR', () => {
       const data = [0xf6]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -80,7 +78,7 @@ describe('parseData', () => {
 
     test('FAIL', () => {
       const data = [0xf8]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -92,7 +90,7 @@ describe('parseData', () => {
 
     test('KEY_NOT_SET', () => {
       const data = [0xfa]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -106,7 +104,7 @@ describe('parseData', () => {
   describe('RESET_FIXED_ENCRYPTION_KEY', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'RESET_FIXED_ENCRYPTION_KEY', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'RESET_FIXED_ENCRYPTION_KEY', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'RESET_FIXED_ENCRYPTION_KEY',
@@ -120,7 +118,7 @@ describe('parseData', () => {
   describe('SET_FIXED_ENCRYPTION_KEY', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_FIXED_ENCRYPTION_KEY', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_FIXED_ENCRYPTION_KEY', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_FIXED_ENCRYPTION_KEY',
@@ -134,7 +132,7 @@ describe('parseData', () => {
   describe('ENABLE_PAYOUT_DEVICE', () => {
     test('No device connected', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'ENABLE_PAYOUT_DEVICE',
@@ -149,7 +147,7 @@ describe('parseData', () => {
 
     test('Invalid currency detected', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'ENABLE_PAYOUT_DEVICE',
@@ -164,7 +162,7 @@ describe('parseData', () => {
 
     test('Device busy', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'ENABLE_PAYOUT_DEVICE',
@@ -179,7 +177,7 @@ describe('parseData', () => {
 
     test('Empty only (Note float only)', () => {
       const data = [0xf5, 0x04]
-      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'ENABLE_PAYOUT_DEVICE',
@@ -194,7 +192,7 @@ describe('parseData', () => {
 
     test('Device error', () => {
       const data = [0xf5, 0x05]
-      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'ENABLE_PAYOUT_DEVICE',
@@ -211,7 +209,7 @@ describe('parseData', () => {
   describe('DISABLE_PAYOUT_DEVICE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'DISABLE_PAYOUT_DEVICE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'DISABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'DISABLE_PAYOUT_DEVICE',
@@ -225,7 +223,7 @@ describe('parseData', () => {
   describe('COIN_MECH_OPTONS', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'COIN_MECH_OPTONS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'COIN_MECH_OPTONS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'COIN_MECH_OPTONS',
@@ -239,7 +237,7 @@ describe('parseData', () => {
   describe('RESET_COUNTERS', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'RESET_COUNTERS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'RESET_COUNTERS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'RESET_COUNTERS',
@@ -255,7 +253,7 @@ describe('parseData', () => {
       const data = [
         0xf0, 0x05, 0x2c, 0x01, 0x00, 0x00, 0xd2, 0x00, 0x00, 0x00, 0xb4, 0x00, 0x00, 0x00, 0x68, 0x01, 0x00, 0x00, 0x19, 0x00, 0x00, 0x00,
       ]
-      const result = parseData(data, 'GET_COUNTERS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_COUNTERS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_COUNTERS',
@@ -275,7 +273,7 @@ describe('parseData', () => {
   describe('EVENT_ACK', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'EVENT_ACK', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'EVENT_ACK', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'EVENT_ACK',
@@ -289,7 +287,7 @@ describe('parseData', () => {
   describe('POLL_WITH_ACK', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'POLL_WITH_ACK', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL_WITH_ACK', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL_WITH_ACK',
@@ -303,7 +301,7 @@ describe('parseData', () => {
   describe('CONFIGURE_BEZEL', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'CONFIGURE_BEZEL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'CONFIGURE_BEZEL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CONFIGURE_BEZEL',
@@ -315,7 +313,7 @@ describe('parseData', () => {
 
     test('COMMAND_NOT_KNOWN', () => {
       const data = [0xf2]
-      const result = parseData(data, 'CONFIGURE_BEZEL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'CONFIGURE_BEZEL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CONFIGURE_BEZEL',
@@ -332,7 +330,7 @@ describe('parseData', () => {
         240, 7, 0, 0, 100, 0, 0, 0, 85, 83, 68, 0, 0, 200, 0, 0, 0, 85, 83, 68, 1, 0, 244, 1, 0, 0, 85, 83, 68, 0, 0, 232, 3, 0, 0, 85, 83, 68, 0, 0,
         208, 7, 0, 0, 85, 83, 68, 0, 0, 136, 19, 0, 0, 85, 83, 68, 0, 0, 16, 39, 0, 0, 85, 83, 68, 0, 0, 0, 0,
       ]
-      const result = parseData(data, 'CASHBOX_PAYOUT_OPERATION_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'CASHBOX_PAYOUT_OPERATION_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CASHBOX_PAYOUT_OPERATION_DATA',
@@ -384,7 +382,7 @@ describe('parseData', () => {
   describe('SMART_EMPTY', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SMART_EMPTY', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SMART_EMPTY', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SMART_EMPTY',
@@ -398,7 +396,7 @@ describe('parseData', () => {
   describe('GET_HOPPER_OPTIONS', () => {
     test('OK', () => {
       const data = [0xf0, 0x04, 0x00]
-      const result = parseData(data, 'GET_HOPPER_OPTIONS', protocolVersion, 'Smart Hopper')
+      const result = parseData(data, 'GET_HOPPER_OPTIONS', 6, 'Smart Hopper')
 
       assert.deepEqual(result, {
         command: 'GET_HOPPER_OPTIONS',
@@ -417,7 +415,7 @@ describe('parseData', () => {
   describe('SET_HOPPER_OPTIONS', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_HOPPER_OPTIONS', protocolVersion, 'Smart Hopper')
+      const result = parseData(data, 'SET_HOPPER_OPTIONS', 6, 'Smart Hopper')
 
       assert.deepEqual(result, {
         command: 'SET_HOPPER_OPTIONS',
@@ -431,7 +429,7 @@ describe('parseData', () => {
   describe('GET_BUILD_REVISION', () => {
     test('NV200', () => {
       const data = [0xf0, 0x00, 0x14, 0x00, 0x06, 0x15, 0x00]
-      const result = parseData(data, 'GET_BUILD_REVISION', protocolVersion, 'SMART payout fitted')
+      const result = parseData(data, 'GET_BUILD_REVISION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BUILD_REVISION',
@@ -454,7 +452,7 @@ describe('parseData', () => {
 
     test('NV11', () => {
       const data = [0xf0, 0x00, 0x00, 0x00, 0x03, 0x08, 0x00]
-      const result = parseData(data, 'GET_BUILD_REVISION', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'GET_BUILD_REVISION', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BUILD_REVISION',
@@ -479,7 +477,7 @@ describe('parseData', () => {
   describe('SET_BAUD_RATE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_BAUD_RATE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_BAUD_RATE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_BAUD_RATE',
@@ -491,7 +489,7 @@ describe('parseData', () => {
 
     test('COMMAND_NOT_KNOWN ', () => {
       const data = [0xf2]
-      const result = parseData(data, 'SET_BAUD_RATE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_BAUD_RATE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_BAUD_RATE',
@@ -505,7 +503,7 @@ describe('parseData', () => {
   describe('REQUEST_KEY_EXCHANGE', () => {
     test('OK', () => {
       const data = [0xf0, 0xcb, 0xe1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'REQUEST_KEY_EXCHANGE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'REQUEST_KEY_EXCHANGE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'REQUEST_KEY_EXCHANGE',
@@ -519,7 +517,7 @@ describe('parseData', () => {
 
     test('FAIL ', () => {
       const data = [0xf8]
-      const result = parseData(data, 'REQUEST_KEY_EXCHANGE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'REQUEST_KEY_EXCHANGE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'REQUEST_KEY_EXCHANGE',
@@ -533,7 +531,7 @@ describe('parseData', () => {
   describe('SET_MODULUS', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_MODULUS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_MODULUS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_MODULUS',
@@ -545,7 +543,7 @@ describe('parseData', () => {
 
     test('PARAMETER_OUT_OF_RANGE ', () => {
       const data = [0xf4]
-      const result = parseData(data, 'SET_MODULUS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_MODULUS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_MODULUS',
@@ -559,7 +557,7 @@ describe('parseData', () => {
   describe('SET_GENERATOR', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_GENERATOR', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_GENERATOR', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_GENERATOR',
@@ -571,7 +569,7 @@ describe('parseData', () => {
 
     test('PARAMETER_OUT_OF_RANGE ', () => {
       const data = [0xf4]
-      const result = parseData(data, 'SET_GENERATOR', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_GENERATOR', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_GENERATOR',
@@ -585,7 +583,7 @@ describe('parseData', () => {
   describe('SET_COIN_MECH_GLOBAL_INHIBIT', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_COIN_MECH_GLOBAL_INHIBIT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_COIN_MECH_GLOBAL_INHIBIT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_COIN_MECH_GLOBAL_INHIBIT',
@@ -599,7 +597,7 @@ describe('parseData', () => {
   describe('PAYOUT_BY_DENOMINATION', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_BY_DENOMINATION',
@@ -611,7 +609,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Not enough value in device', () => {
       const data = [0xf5, 0x00]
-      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_BY_DENOMINATION',
@@ -626,7 +624,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Cannot pay exact amount', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_BY_DENOMINATION',
@@ -641,7 +639,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device busy', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_BY_DENOMINATION',
@@ -656,7 +654,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device disabled', () => {
       const data = [0xf5, 0x04]
-      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_BY_DENOMINATION',
@@ -671,7 +669,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Unknown error', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_BY_DENOMINATION',
@@ -688,7 +686,7 @@ describe('parseData', () => {
   describe('SET_VALUE_REPORTING_TYPE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_VALUE_REPORTING_TYPE',
@@ -700,7 +698,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: No payout connected', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_VALUE_REPORTING_TYPE',
@@ -715,7 +713,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Invalid currency detected ', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_VALUE_REPORTING_TYPE',
@@ -730,7 +728,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Payout device error ', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_VALUE_REPORTING_TYPE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_VALUE_REPORTING_TYPE',
@@ -747,7 +745,7 @@ describe('parseData', () => {
   describe('FLOAT_BY_DENOMINATION', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'FLOAT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_BY_DENOMINATION',
@@ -759,7 +757,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Not enough value in device', () => {
       const data = [0xf5, 0x00]
-      const result = parseData(data, 'FLOAT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_BY_DENOMINATION',
@@ -774,7 +772,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Cannot pay exact amount', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'FLOAT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_BY_DENOMINATION',
@@ -789,7 +787,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device busy', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'FLOAT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_BY_DENOMINATION',
@@ -804,7 +802,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device disabled', () => {
       const data = [0xf5, 0x04]
-      const result = parseData(data, 'FLOAT_BY_DENOMINATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_BY_DENOMINATION',
@@ -819,7 +817,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Unknown error', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'FLOAT_BY_DENOMINATION', protocolVersion, 'deviceUnitType')
+      const result = parseData(data, 'FLOAT_BY_DENOMINATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_BY_DENOMINATION',
@@ -836,7 +834,7 @@ describe('parseData', () => {
   describe('STACK_NOTE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'STACK_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'STACK_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'STACK_NOTE',
@@ -848,7 +846,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float unit not connected', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'STACK_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'STACK_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'STACK_NOTE',
@@ -863,7 +861,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float empty', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'STACK_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'STACK_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'STACK_NOTE',
@@ -878,7 +876,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float busy', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'STACK_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'STACK_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'STACK_NOTE',
@@ -893,7 +891,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float disabled', () => {
       const data = [0xf5, 0x04]
-      const result = parseData(data, 'STACK_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'STACK_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'STACK_NOTE',
@@ -910,7 +908,7 @@ describe('parseData', () => {
   describe('PAYOUT_NOTE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'PAYOUT_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'PAYOUT_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_NOTE',
@@ -922,7 +920,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float unit not connected', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'PAYOUT_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'PAYOUT_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_NOTE',
@@ -937,7 +935,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float empty', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'PAYOUT_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'PAYOUT_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_NOTE',
@@ -952,7 +950,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float busy', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'PAYOUT_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'PAYOUT_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_NOTE',
@@ -967,7 +965,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Note float disabled', () => {
       const data = [0xf5, 0x04]
-      const result = parseData(data, 'PAYOUT_NOTE', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'PAYOUT_NOTE', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_NOTE',
@@ -990,7 +988,7 @@ describe('parseData', () => {
   describe('SET_COIN_MECH_INHIBITS', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_COIN_MECH_INHIBITS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_COIN_MECH_INHIBITS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_COIN_MECH_INHIBITS',
@@ -1004,7 +1002,7 @@ describe('parseData', () => {
   describe('EMPTY_ALL response', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'EMPTY_ALL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'EMPTY_ALL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'EMPTY_ALL',
@@ -1018,7 +1016,7 @@ describe('parseData', () => {
   describe('GET_MINIMUM_PAYOUT', () => {
     test('OK', () => {
       const data = [0xf0, 0xc8, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'GET_MINIMUM_PAYOUT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_MINIMUM_PAYOUT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_MINIMUM_PAYOUT',
@@ -1034,7 +1032,7 @@ describe('parseData', () => {
   describe('FLOAT_AMOUNT', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'FLOAT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_AMOUNT',
@@ -1046,7 +1044,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Not enough value in device', () => {
       const data = [0xf5, 0x00]
-      const result = parseData(data, 'FLOAT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_AMOUNT',
@@ -1061,7 +1059,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Cannot pay exact amount', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'FLOAT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_AMOUNT',
@@ -1076,7 +1074,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Unknown error', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'FLOAT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_AMOUNT',
@@ -1091,7 +1089,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device busy', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'FLOAT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_AMOUNT',
@@ -1106,7 +1104,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device disabled', () => {
       const data = [0xf5, 0x04]
-      const result = parseData(data, 'FLOAT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'FLOAT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'FLOAT_AMOUNT',
@@ -1123,7 +1121,7 @@ describe('parseData', () => {
   describe('GET_DENOMINATION_ROUTE', () => {
     test('OK: Recycled and used for payouts', () => {
       const data = [0xf0, 0x00]
-      const result = parseData(data, 'GET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_ROUTE',
@@ -1138,7 +1136,7 @@ describe('parseData', () => {
 
     test('OK: Detected denomination is routed to system cashbox', () => {
       const data = [0xf0, 0x01]
-      const result = parseData(data, 'GET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_ROUTE',
@@ -1153,7 +1151,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: No payout connected', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'GET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_ROUTE',
@@ -1168,7 +1166,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Invalid currency detected', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'GET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_ROUTE',
@@ -1183,7 +1181,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Payout device error', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'GET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_ROUTE',
@@ -1198,7 +1196,7 @@ describe('parseData', () => {
 
     test('PARAMETER_OUT_OF_RANGE', () => {
       const data = [0xf4]
-      const result = parseData(data, 'GET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_ROUTE',
@@ -1212,7 +1210,7 @@ describe('parseData', () => {
   describe('SET_DENOMINATION_ROUTE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_DENOMINATION_ROUTE',
@@ -1224,7 +1222,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: No payout connected', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'SET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_DENOMINATION_ROUTE',
@@ -1239,7 +1237,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Invalid currency detected', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'SET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_DENOMINATION_ROUTE',
@@ -1254,7 +1252,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Payout device error', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'SET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_DENOMINATION_ROUTE',
@@ -1269,7 +1267,7 @@ describe('parseData', () => {
 
     test('PARAMETER_OUT_OF_RANGE', () => {
       const data = [0xf4]
-      const result = parseData(data, 'SET_DENOMINATION_ROUTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_DENOMINATION_ROUTE',
@@ -1283,7 +1281,7 @@ describe('parseData', () => {
   describe('HALT_PAYOUT', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'HALT_PAYOUT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'HALT_PAYOUT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'HALT_PAYOUT',
@@ -1297,7 +1295,7 @@ describe('parseData', () => {
   describe('COMMUNICATION_PASS_THROUGH', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'COMMUNICATION_PASS_THROUGH', protocolVersion, 'Smart Hopper')
+      const result = parseData(data, 'COMMUNICATION_PASS_THROUGH', 6, 'Smart Hopper')
 
       assert.deepEqual(result, {
         command: 'COMMUNICATION_PASS_THROUGH',
@@ -1311,7 +1309,7 @@ describe('parseData', () => {
   describe('GET_DENOMINATION_LEVEL', () => {
     test('OK', () => {
       const data = [0xf0, 0xc8, 0x00]
-      const result = parseData(data, 'GET_DENOMINATION_LEVEL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_LEVEL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_LEVEL',
@@ -1325,7 +1323,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED', () => {
       const data = [0xf5]
-      const result = parseData(data, 'GET_DENOMINATION_LEVEL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DENOMINATION_LEVEL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DENOMINATION_LEVEL',
@@ -1339,7 +1337,7 @@ describe('parseData', () => {
   describe('SET_DENOMINATION_LEVEL', () => {
     test('OK', () => {
       const data = [0xf0, 0xc8, 0x00]
-      const result = parseData(data, 'SET_DENOMINATION_LEVEL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_DENOMINATION_LEVEL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_DENOMINATION_LEVEL',
@@ -1351,7 +1349,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED', () => {
       const data = [0xf5]
-      const result = parseData(data, 'SET_DENOMINATION_LEVEL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_DENOMINATION_LEVEL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_DENOMINATION_LEVEL',
@@ -1365,7 +1363,7 @@ describe('parseData', () => {
   describe('PAYOUT_AMOUNT', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'PAYOUT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_AMOUNT',
@@ -1377,7 +1375,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Not enough value in device', () => {
       const data = [0xf5, 0x00]
-      const result = parseData(data, 'PAYOUT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_AMOUNT',
@@ -1392,7 +1390,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Cannot pay exact amount', () => {
       const data = [0xf5, 0x01]
-      const result = parseData(data, 'PAYOUT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_AMOUNT',
@@ -1407,7 +1405,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Unknown error', () => {
       const data = [0xf5, 0x02]
-      const result = parseData(data, 'PAYOUT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_AMOUNT',
@@ -1422,7 +1420,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device busy', () => {
       const data = [0xf5, 0x03]
-      const result = parseData(data, 'PAYOUT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_AMOUNT',
@@ -1437,7 +1435,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED: Device disabled', () => {
       const data = [0xf5, 0x04]
-      const result = parseData(data, 'PAYOUT_AMOUNT', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'PAYOUT_AMOUNT', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'PAYOUT_AMOUNT',
@@ -1454,7 +1452,7 @@ describe('parseData', () => {
   describe('SET_REFILL_MODE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_REFILL_MODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_REFILL_MODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_REFILL_MODE',
@@ -1466,7 +1464,7 @@ describe('parseData', () => {
 
     test('OK: read mode', () => {
       const data = [0xf0, 0x01]
-      const result = parseData(data, 'SET_REFILL_MODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_REFILL_MODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_REFILL_MODE',
@@ -1482,7 +1480,7 @@ describe('parseData', () => {
   describe('GET_BAR_CODE_DATA', () => {
     test('OK: ticket_in_escrow', () => {
       const data = [0xf0, 0x01, 0x06, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36]
-      const result = parseData(data, 'GET_BAR_CODE_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_DATA',
@@ -1497,7 +1495,7 @@ describe('parseData', () => {
 
     test('OK: ticket_stacked', () => {
       const data = [0xf0, 0x02, 0x06, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36]
-      const result = parseData(data, 'GET_BAR_CODE_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_DATA',
@@ -1512,7 +1510,7 @@ describe('parseData', () => {
 
     test('OK: ticket_rejected', () => {
       const data = [0xf0, 0x03, 0x06, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36]
-      const result = parseData(data, 'GET_BAR_CODE_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_DATA',
@@ -1527,7 +1525,7 @@ describe('parseData', () => {
 
     test('OK: no_valid_data', () => {
       const data = [0xf0, 0x00, 0x00]
-      const result = parseData(data, 'GET_BAR_CODE_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_DATA',
@@ -1544,7 +1542,7 @@ describe('parseData', () => {
   describe('SET_BAR_CODE_INHIBIT_STATUS', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_BAR_CODE_INHIBIT_STATUS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_BAR_CODE_INHIBIT_STATUS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_BAR_CODE_INHIBIT_STATUS',
@@ -1558,7 +1556,7 @@ describe('parseData', () => {
   describe('GET_BAR_CODE_INHIBIT_STATUS', () => {
     test('OK: enabled', () => {
       const data = [0xf0, 0xfc]
-      const result = parseData(data, 'GET_BAR_CODE_INHIBIT_STATUS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_INHIBIT_STATUS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_INHIBIT_STATUS',
@@ -1573,7 +1571,7 @@ describe('parseData', () => {
 
     test('OK: disabled', () => {
       const data = [0xf0, 0xff]
-      const result = parseData(data, 'GET_BAR_CODE_INHIBIT_STATUS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_INHIBIT_STATUS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_INHIBIT_STATUS',
@@ -1590,7 +1588,7 @@ describe('parseData', () => {
   describe('SET_BAR_CODE_CONFIGURATION', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_BAR_CODE_CONFIGURATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_BAR_CODE_CONFIGURATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_BAR_CODE_CONFIGURATION',
@@ -1604,7 +1602,7 @@ describe('parseData', () => {
   describe('GET_BAR_CODE_READER_CONFIGURATION', () => {
     test('OK: none', () => {
       const data = [0xf0, 0x00, 0x00, 0x01, 0x06]
-      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_READER_CONFIGURATION',
@@ -1621,7 +1619,7 @@ describe('parseData', () => {
 
     test('OK: top', () => {
       const data = [0xf0, 0x01, 0x01, 0x01, 0x06]
-      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_READER_CONFIGURATION',
@@ -1638,7 +1636,7 @@ describe('parseData', () => {
 
     test('OK: bottom', () => {
       const data = [0xf0, 0x02, 0x02, 0x01, 0x06]
-      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_READER_CONFIGURATION',
@@ -1655,7 +1653,7 @@ describe('parseData', () => {
 
     test('OK: both', () => {
       const data = [0xf0, 0x03, 0x03, 0x01, 0x06]
-      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_BAR_CODE_READER_CONFIGURATION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_BAR_CODE_READER_CONFIGURATION',
@@ -1677,7 +1675,7 @@ describe('parseData', () => {
         0xf0, 0x04, 0x64, 0x00, 0x14, 0x00, 0x00, 0x00, 0x45, 0x55, 0x52, 0x41, 0x00, 0x32, 0x00, 0x00, 0x00, 0x45, 0x55, 0x52, 0x00, 0x00, 0x64,
         0x00, 0x00, 0x00, 0x45, 0x55, 0x52, 0x0c, 0x00, 0xc8, 0x00, 0x00, 0x00, 0x45, 0x55, 0x52, 0x84, 0xd0,
       ]
-      const result = parseData(data, 'GET_ALL_LEVELS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_ALL_LEVELS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_ALL_LEVELS',
@@ -1714,7 +1712,7 @@ describe('parseData', () => {
   describe('GET_DATASET_VERSION', () => {
     test('OK', () => {
       const data = [0xf0, 0x45, 0x55, 0x52, 0x30, 0x31, 0x36, 0x31, 0x30]
-      const result = parseData(data, 'GET_DATASET_VERSION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_DATASET_VERSION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_DATASET_VERSION',
@@ -1730,7 +1728,7 @@ describe('parseData', () => {
   describe('GET_FIRMWARE_VERSION', () => {
     test('OK', () => {
       const data = [0xf0, 0x4e, 0x56, 0x30, 0x32, 0x30, 0x30, 0x34, 0x31, 0x34, 0x31, 0x34, 0x39, 0x38, 0x30, 0x30, 0x30]
-      const result = parseData(data, 'GET_FIRMWARE_VERSION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_FIRMWARE_VERSION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_FIRMWARE_VERSION',
@@ -1746,7 +1744,7 @@ describe('parseData', () => {
   describe('HOLD', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'HOLD', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'HOLD', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'HOLD',
@@ -1758,7 +1756,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED', () => {
       const data = [0xf5]
-      const result = parseData(data, 'HOLD', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'HOLD', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'HOLD',
@@ -1772,7 +1770,7 @@ describe('parseData', () => {
   describe('LAST_REJECT_CODE', () => {
     test('OK: NOTE_ACCEPTED', () => {
       const data = [0xf0, 0x0]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1788,7 +1786,7 @@ describe('parseData', () => {
 
     test('OK: LENGTH_FAIL', () => {
       const data = [0xf0, 0x1]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1804,7 +1802,7 @@ describe('parseData', () => {
 
     test('OK: AVERAGE_FAIL', () => {
       const data = [0xf0, 0x2]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1820,7 +1818,7 @@ describe('parseData', () => {
 
     test('OK: COASTLINE_FAIL', () => {
       const data = [0xf0, 0x3]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1836,7 +1834,7 @@ describe('parseData', () => {
 
     test('OK: GRAPH_FAIL', () => {
       const data = [0xf0, 0x4]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1852,7 +1850,7 @@ describe('parseData', () => {
 
     test('OK: BURIED_FAIL', () => {
       const data = [0xf0, 0x5]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1868,7 +1866,7 @@ describe('parseData', () => {
 
     test('OK: CHANNEL_INHIBIT', () => {
       const data = [0xf0, 0x6]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1884,7 +1882,7 @@ describe('parseData', () => {
 
     test('OK: SECOND_NOTE_DETECTED', () => {
       const data = [0xf0, 0x7]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1900,7 +1898,7 @@ describe('parseData', () => {
 
     test('OK: REJECT_BY_HOST', () => {
       const data = [0xf0, 0x8]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1916,7 +1914,7 @@ describe('parseData', () => {
 
     test('OK: CROSS_CHANNEL_DETECTED', () => {
       const data = [0xf0, 0x9]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1932,7 +1930,7 @@ describe('parseData', () => {
 
     test('OK: REAR_SENSOR_ERROR', () => {
       const data = [0xf0, 0xa]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1948,7 +1946,7 @@ describe('parseData', () => {
 
     test('OK: NOTE_TOO_LONG', () => {
       const data = [0xf0, 0xb]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1964,7 +1962,7 @@ describe('parseData', () => {
 
     test('OK: DISABLED_BY_HOST', () => {
       const data = [0xf0, 0xc]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1980,7 +1978,7 @@ describe('parseData', () => {
 
     test('OK: SLOW_MECH', () => {
       const data = [0xf0, 0xd]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -1996,7 +1994,7 @@ describe('parseData', () => {
 
     test('OK: STRIM_ATTEMPT', () => {
       const data = [0xf0, 0xe]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2012,7 +2010,7 @@ describe('parseData', () => {
 
     test('OK: FRAUD_CHANNEL', () => {
       const data = [0xf0, 0xf]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2028,7 +2026,7 @@ describe('parseData', () => {
 
     test('OK: NO_NOTES_DETECTED', () => {
       const data = [0xf0, 0x10]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2044,7 +2042,7 @@ describe('parseData', () => {
 
     test('OK: PEAK_DETECT_FAIL', () => {
       const data = [0xf0, 0x11]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2060,7 +2058,7 @@ describe('parseData', () => {
 
     test('OK: TWISTED_NOTE_REJECT', () => {
       const data = [0xf0, 0x12]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2076,7 +2074,7 @@ describe('parseData', () => {
 
     test('OK: ESCROW_TIME-OUT', () => {
       const data = [0xf0, 0x13]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2092,7 +2090,7 @@ describe('parseData', () => {
 
     test('OK: BAR_CODE_SCAN_FAIL', () => {
       const data = [0xf0, 0x14]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2108,7 +2106,7 @@ describe('parseData', () => {
 
     test('OK: NO_CAM_ACTIVATE', () => {
       const data = [0xf0, 0x15]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2124,7 +2122,7 @@ describe('parseData', () => {
 
     test('OK: SLOT_FAIL_1', () => {
       const data = [0xf0, 0x16]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2140,7 +2138,7 @@ describe('parseData', () => {
 
     test('OK: SLOT_FAIL_2', () => {
       const data = [0xf0, 0x17]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2156,7 +2154,7 @@ describe('parseData', () => {
 
     test('OK: LENS_OVERSAMPLE', () => {
       const data = [0xf0, 0x18]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2172,7 +2170,7 @@ describe('parseData', () => {
 
     test('OK: WIDTH_DETECTION_FAIL', () => {
       const data = [0xf0, 0x19]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2188,7 +2186,7 @@ describe('parseData', () => {
 
     test('OK: SHORT_NOTE_DETECT', () => {
       const data = [0xf0, 0x1a]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2204,7 +2202,7 @@ describe('parseData', () => {
 
     test('OK: PAYOUT_NOTE', () => {
       const data = [0xf0, 0x1b]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2220,7 +2218,7 @@ describe('parseData', () => {
 
     test('OK: DOUBLE_NOTE_DETECTED', () => {
       const data = [0xf0, 0x1c]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2236,7 +2234,7 @@ describe('parseData', () => {
 
     test('OK: UNABLE_TO_STACK', () => {
       const data = [0xf0, 0x1d]
-      const result = parseData(data, 'LAST_REJECT_CODE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'LAST_REJECT_CODE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'LAST_REJECT_CODE',
@@ -2254,7 +2252,7 @@ describe('parseData', () => {
   describe('SYNC', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SYNC', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SYNC',
@@ -2268,7 +2266,7 @@ describe('parseData', () => {
   describe('CHANNEL_RE_TEACH_DATA', () => {
     test('OK', () => {
       const data = [0xf0, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'CHANNEL_RE_TEACH_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'CHANNEL_RE_TEACH_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CHANNEL_RE_TEACH_DATA',
@@ -2282,7 +2280,7 @@ describe('parseData', () => {
 
     test('COMMAND_NOT_KNOWN', () => {
       const data = [0xf2]
-      const result = parseData(data, 'CHANNEL_RE_TEACH_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'CHANNEL_RE_TEACH_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CHANNEL_RE_TEACH_DATA',
@@ -2296,7 +2294,7 @@ describe('parseData', () => {
   describe('CHANNEL_SECURITY_DATA', () => {
     test('OK', () => {
       const data = [0xf0, 0x07, 0x02, 0x02, 0x00, 0x02, 0x00, 0x02, 0x02]
-      const result = parseData(data, 'CHANNEL_SECURITY_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'CHANNEL_SECURITY_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CHANNEL_SECURITY_DATA',
@@ -2320,7 +2318,7 @@ describe('parseData', () => {
   describe('CHANNEL_VALUE_REQUEST', () => {
     test('OK: protocol < 6', () => {
       const data = [0xf0, 0x07, 0x05, 0x0a, 0x00, 0x14, 0x00, 0x32, 0x64]
-      const result = parseData(data, 'CHANNEL_VALUE_REQUEST', 5, deviceUnitType)
+      const result = parseData(data, 'CHANNEL_VALUE_REQUEST', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CHANNEL_VALUE_REQUEST',
@@ -2337,7 +2335,7 @@ describe('parseData', () => {
         240, 7, 1, 2, 5, 10, 20, 50, 100, 85, 83, 68, 85, 83, 68, 85, 83, 68, 85, 83, 68, 85, 83, 68, 85, 83, 68, 85, 83, 68, 1, 0, 0, 0, 2, 0, 0, 0,
         5, 0, 0, 0, 10, 0, 0, 0, 20, 0, 0, 0, 50, 0, 0, 0, 100, 0, 0, 0,
       ]
-      const result = parseData(data, 'CHANNEL_VALUE_REQUEST', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'CHANNEL_VALUE_REQUEST', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'CHANNEL_VALUE_REQUEST',
@@ -2355,7 +2353,7 @@ describe('parseData', () => {
   describe('UNIT_DATA', () => {
     test('OK', () => {
       const data = [240, 6, 48, 52, 53, 57, 85, 83, 68, 0, 0, 1, 6]
-      const result = parseData(data, 'UNIT_DATA', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'UNIT_DATA', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'UNIT_DATA',
@@ -2375,7 +2373,7 @@ describe('parseData', () => {
   describe('GET_SERIAL_NUMBER', () => {
     test('OK', () => {
       const data = [240, 0, 74, 120, 180]
-      const result = parseData(data, 'GET_SERIAL_NUMBER', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'GET_SERIAL_NUMBER', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'GET_SERIAL_NUMBER',
@@ -2391,7 +2389,7 @@ describe('parseData', () => {
   describe('ENABLE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'ENABLE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'ENABLE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'ENABLE',
@@ -2403,7 +2401,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED', () => {
       const data = [0xf5]
-      const result = parseData(data, 'ENABLE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'ENABLE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'ENABLE',
@@ -2417,7 +2415,7 @@ describe('parseData', () => {
   describe('DISABLE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'DISABLE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'DISABLE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'DISABLE',
@@ -2429,7 +2427,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED', () => {
       const data = [0xf5]
-      const result = parseData(data, 'DISABLE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'DISABLE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'DISABLE',
@@ -2443,7 +2441,7 @@ describe('parseData', () => {
   describe('REJECT_BANKNOTE', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'REJECT_BANKNOTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'REJECT_BANKNOTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'REJECT_BANKNOTE',
@@ -2455,7 +2453,7 @@ describe('parseData', () => {
 
     test('COMMAND_CANNOT_BE_PROCESSED', () => {
       const data = [0xf5]
-      const result = parseData(data, 'REJECT_BANKNOTE', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'REJECT_BANKNOTE', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'REJECT_BANKNOTE',
@@ -2469,7 +2467,7 @@ describe('parseData', () => {
   describe('POLL', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2481,7 +2479,7 @@ describe('parseData', () => {
 
     test('SLAVE_RESET', () => {
       const data = [0xf0, 0xf1]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2499,7 +2497,7 @@ describe('parseData', () => {
 
     test('READ_NOTE', () => {
       const data = [0xf0, 0xef, 0x01]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2519,7 +2517,7 @@ describe('parseData', () => {
 
     test('CREDIT_NOTE', () => {
       const data = [0xf0, 0xee, 0x01]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2539,7 +2537,7 @@ describe('parseData', () => {
 
     test('NOTE_REJECTING', () => {
       const data = [0xf0, 0xed]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2557,7 +2555,7 @@ describe('parseData', () => {
 
     test('NOTE_REJECTED', () => {
       const data = [0xf0, 0xec]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2575,7 +2573,7 @@ describe('parseData', () => {
 
     test('NOTE_STACKING', () => {
       const data = [0xf0, 0xcc]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2593,7 +2591,7 @@ describe('parseData', () => {
 
     test('NOTE_STACKED', () => {
       const data = [0xf0, 0xeb]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2611,7 +2609,7 @@ describe('parseData', () => {
 
     test('SAFE_NOTE_JAM', () => {
       const data = [0xf0, 0xea]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2629,7 +2627,7 @@ describe('parseData', () => {
 
     test('UNSAFE_NOTE_JAM', () => {
       const data = [0xf0, 0xe9]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2647,7 +2645,7 @@ describe('parseData', () => {
 
     test('DISABLED', () => {
       const data = [0xf0, 0xe8]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2665,7 +2663,7 @@ describe('parseData', () => {
 
     test('FRAUD_ATTEMPT: Banknote validator', () => {
       const data = [0xf0, 0xe6, 0x01]
-      const result = parseData(data, 'POLL', protocolVersion, 'Banknote validator')
+      const result = parseData(data, 'POLL', 6, 'Banknote validator')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2685,7 +2683,7 @@ describe('parseData', () => {
 
     test('FRAUD_ATTEMPT: Smart protocol < 6', () => {
       const data = [0xf0, 0xe6, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 4, deviceUnitType)
+      const result = parseData(data, 'POLL', 4, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2705,7 +2703,7 @@ describe('parseData', () => {
 
     test('FRAUD_ATTEMPT: Smart protocol >= 6', () => {
       const data = [0xf0, 0xe6, 0x02, 0x02, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x01, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2728,7 +2726,7 @@ describe('parseData', () => {
 
     test('STACKER_FULL', () => {
       const data = [0xf0, 0xe7]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2746,7 +2744,7 @@ describe('parseData', () => {
 
     test('NOTE_CLEARED_FROM_FRONT', () => {
       const data = [0xf0, 0xe1, 0x01]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2766,7 +2764,7 @@ describe('parseData', () => {
 
     test('NOTE_CLEARED_TO_CASHBOX', () => {
       const data = [0xf0, 0xe2, 0x01]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2786,7 +2784,7 @@ describe('parseData', () => {
 
     test('CASHBOX_REMOVED', () => {
       const data = [0xf0, 0xe3]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2804,7 +2802,7 @@ describe('parseData', () => {
 
     test('CASHBOX_REPLACED', () => {
       const data = [0xf0, 0xe4]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2822,7 +2820,7 @@ describe('parseData', () => {
 
     test('BAR_CODE_TICKET_VALIDATED', () => {
       const data = [0xf0, 0xe5]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2840,7 +2838,7 @@ describe('parseData', () => {
 
     test('BAR_CODE_TICKET_ACKNOWLEDGE', () => {
       const data = [0xf0, 0xd1]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2858,7 +2856,7 @@ describe('parseData', () => {
 
     test('NOTE_PATH_OPEN', () => {
       const data = [0xf0, 0xe0]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2876,7 +2874,7 @@ describe('parseData', () => {
 
     test('CHANNEL_DISABLE', () => {
       const data = [0xf0, 0xb5]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2894,7 +2892,7 @@ describe('parseData', () => {
 
     test('INITIALISING', () => {
       const data = [0xf0, 0xb6]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2913,7 +2911,7 @@ describe('parseData', () => {
 
     test('DISPENSING: protocol < 6', () => {
       const data = [0xf0, 0xda, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2932,7 +2930,7 @@ describe('parseData', () => {
 
     test('DISPENSING: protocol >= 6', () => {
       const data = [0xf0, 0xda, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x05, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2961,7 +2959,7 @@ describe('parseData', () => {
 
     test('JAMMED: protocol < 6', () => {
       const data = [0xf0, 0xd5, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -2981,7 +2979,7 @@ describe('parseData', () => {
 
     test('JAMMED: protocol >= 6', () => {
       const data = [0xf0, 0xd5, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x05, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3011,7 +3009,7 @@ describe('parseData', () => {
 
     test('HALTED: protocol < 6', () => {
       const data = [0xf0, 0xd6, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3031,7 +3029,7 @@ describe('parseData', () => {
 
     test('HALTED: protocol >= 6', () => {
       const data = [0xf0, 0xd6, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x05, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3061,7 +3059,7 @@ describe('parseData', () => {
 
     test('FLOATING: protocol < 6', () => {
       const data = [0xf0, 0xd7, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3081,7 +3079,7 @@ describe('parseData', () => {
 
     test('FLOATING: protocol >= 6', () => {
       const data = [0xf0, 0xd7, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x05, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3110,7 +3108,7 @@ describe('parseData', () => {
 
     test('FLOATED: protocol < 6', () => {
       const data = [0xf0, 0xd8, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3129,7 +3127,7 @@ describe('parseData', () => {
 
     test('FLOATED: protocol >= 6', () => {
       const data = [0xf0, 0xd8, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x05, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3157,7 +3155,7 @@ describe('parseData', () => {
 
     test('TIME_OUT: protocol < 6', () => {
       const data = [0xf0, 0xd9, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3176,7 +3174,7 @@ describe('parseData', () => {
 
     test('TIME_OUT: protocol >= 6', () => {
       const data = [0xf0, 0xd9, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x05, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3204,7 +3202,7 @@ describe('parseData', () => {
 
     test('INCOMPLETE_PAYOUT: protocol < 6', () => {
       const data = [0xf0, 0xdc, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3228,7 +3226,7 @@ describe('parseData', () => {
         0xf0, 0xdc, 0x02, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x55,
         0x41, 0x48,
       ]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3260,7 +3258,7 @@ describe('parseData', () => {
 
     test('INCOMPLETE_FLOAT: protocol < 6', () => {
       const data = [0xf0, 0xdd, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3284,7 +3282,7 @@ describe('parseData', () => {
         0xf0, 0xdd, 0x02, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x55,
         0x41, 0x48,
       ]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3315,7 +3313,7 @@ describe('parseData', () => {
 
     test('CASHBOX_PAID: protocol < 6', () => {
       const data = [0xf0, 0xde, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3335,7 +3333,7 @@ describe('parseData', () => {
 
     test('CASHBOX_PAID: protocol >= 6', () => {
       const data = [0xf0, 0xde, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3364,7 +3362,7 @@ describe('parseData', () => {
 
     test('COIN_CREDIT: protocol < 6', () => {
       const data = [0xf0, 0xdf, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3384,7 +3382,7 @@ describe('parseData', () => {
 
     test('COIN_CREDIT: protocol >= 6', () => {
       const data = [0xf0, 0xdf, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3413,7 +3411,7 @@ describe('parseData', () => {
 
     test('COIN_MECH_JAMMED', () => {
       const data = [0xf0, 0xc4]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3431,7 +3429,7 @@ describe('parseData', () => {
 
     test('COIN_MECH_RETURN_PRESSED', () => {
       const data = [0xf0, 0xc5]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3449,7 +3447,7 @@ describe('parseData', () => {
 
     test('EMPTYING', () => {
       const data = [0xf0, 0xc2]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3467,7 +3465,7 @@ describe('parseData', () => {
 
     test('EMPTIED', () => {
       const data = [0xf0, 0xc3]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3485,7 +3483,7 @@ describe('parseData', () => {
 
     test('SMART_EMPTYING: protocol < 6', () => {
       const data = [0xf0, 0xb3, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3505,7 +3503,7 @@ describe('parseData', () => {
 
     test('SMART_EMPTYING: protocol >= 6', () => {
       const data = [0xf0, 0xb3, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3534,7 +3532,7 @@ describe('parseData', () => {
 
     test('SMART_EMPTIED: protocol < 6', () => {
       const data = [0xf0, 0xb4, 0x01, 0x00, 0x00, 0x00]
-      const result = parseData(data, 'POLL', 5, deviceUnitType)
+      const result = parseData(data, 'POLL', 5, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3553,7 +3551,7 @@ describe('parseData', () => {
 
     test('SMART_EMPTIED: protocol >= 6', () => {
       const data = [0xf0, 0xb4, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3581,7 +3579,7 @@ describe('parseData', () => {
 
     test('COIN_MECH_ERROR', () => {
       const data = [0xf0, 0xb7]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3599,7 +3597,7 @@ describe('parseData', () => {
 
     test('NOTE_STORED_IN_PAYOUT', () => {
       const data = [0xf0, 0xdb]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3618,7 +3616,7 @@ describe('parseData', () => {
 
     test('PAYOUT_OUT_OF_SERVICE', () => {
       const data = [0xf0, 0xc6]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3637,7 +3635,7 @@ describe('parseData', () => {
 
     test('JAM_RECOVERY', () => {
       const data = [0xf0, 0xb0]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3656,7 +3654,7 @@ describe('parseData', () => {
 
     test('ERROR_DURING_PAYOUT', () => {
       const data = [0xf0, 0xb1, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48, 0x00]
-      const result = parseData(data, 'POLL', 7, deviceUnitType)
+      const result = parseData(data, 'POLL', 7, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3686,7 +3684,7 @@ describe('parseData', () => {
 
     test('NOTE_TRANSFERED_TO_STACKER: protocol >=6', () => {
       const data = [0xf0, 0xc9, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
-      const result = parseData(data, 'POLL', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3708,7 +3706,7 @@ describe('parseData', () => {
 
     test('NOTE_HELD_IN_BEZEL: protocol >=8', () => {
       const data = [0xf0, 0xce, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
-      const result = parseData(data, 'POLL', 8, deviceUnitType)
+      const result = parseData(data, 'POLL', 8, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3730,7 +3728,7 @@ describe('parseData', () => {
 
     test('NOTE_PAID_INTO_STORE_AT_POWER-UP: protocol >=8', () => {
       const data = [0xf0, 0xcb, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
-      const result = parseData(data, 'POLL', 8, deviceUnitType)
+      const result = parseData(data, 'POLL', 8, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3752,7 +3750,7 @@ describe('parseData', () => {
 
     test('NOTE_PAID_INTO_STACKER_AT_POWER-UP: protocol >=8', () => {
       const data = [0xf0, 0xca, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
-      const result = parseData(data, 'POLL', 8, deviceUnitType)
+      const result = parseData(data, 'POLL', 8, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3774,7 +3772,7 @@ describe('parseData', () => {
 
     test('NOTE_DISPENSED_AT_POWER-UP: protocol >=8', () => {
       const data = [0xf0, 0xcd, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
-      const result = parseData(data, 'POLL', 8, deviceUnitType)
+      const result = parseData(data, 'POLL', 8, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3796,7 +3794,7 @@ describe('parseData', () => {
 
     test('NOTE_FLOAT_REMOVED', () => {
       const data = [0xf0, 0xc7]
-      const result = parseData(data, 'POLL', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'POLL', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3814,7 +3812,7 @@ describe('parseData', () => {
 
     test('NOTE_FLOAT_ATTACHED', () => {
       const data = [0xf0, 0xc8]
-      const result = parseData(data, 'POLL', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'POLL', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3832,7 +3830,7 @@ describe('parseData', () => {
 
     test('DEVICE_FULL', () => {
       const data = [0xf0, 0xcf]
-      const result = parseData(data, 'POLL', protocolVersion, 'Note Float fitted')
+      const result = parseData(data, 'POLL', 6, 'Note Float fitted')
 
       assert.deepEqual(result, {
         command: 'POLL',
@@ -3848,12 +3846,65 @@ describe('parseData', () => {
         success: true,
       })
     })
+
+    test('Multiple events', () => {
+      const data = [
+        0xf0, 0xb1, 0x02, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48, 0x00, 0xb4, 0x02, 0x01, 0x00, 0x00,
+        0x00, 0x55, 0x53, 0x44, 0x02, 0x00, 0x00, 0x00, 0x55, 0x41, 0x48, 0xe4,
+      ]
+      const result = parseData(data, 'POLL', 8, 'SMART payout fitted')
+
+      assert.deepEqual(result, {
+        command: 'POLL',
+        info: [
+          {
+            code: 177,
+            description:
+              'Returned if an error is detected whilst moving a note inside the SMART Payout unit. The cause of error (1 byte) indicates the source of the condition; 0x00 for note not being correctly detected as it is routed to cashbox or for payout, 0x01 if note is jammed in transport. In the case of the incorrect detection, the response to Cashbox Payout Operation Data request would report the note expected to be paid out.',
+            name: 'ERROR_DURING_PAYOUT',
+            value: [
+              {
+                country_code: 'USD',
+                value: 1,
+              },
+              {
+                country_code: 'UAH',
+                value: 2,
+              },
+            ],
+            errorCode: 'wrong_recognition',
+          },
+          {
+            code: 180,
+            description: 'The device has completed its Smart Empty command. The total amount emptied is given in the event data.',
+            name: 'SMART_EMPTIED',
+            value: [
+              {
+                country_code: 'USD',
+                value: 1,
+              },
+              {
+                country_code: 'UAH',
+                value: 2,
+              },
+            ],
+          },
+          {
+            code: 228,
+            description: 'A device with a detectable cashbox has detected that it has been replaced.',
+            name: 'CASHBOX_REPLACED',
+          },
+        ],
+        status: 'OK',
+        success: true,
+      })
+    })
   })
 
   describe('HOST_PROTOCOL_VERSION', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'HOST_PROTOCOL_VERSION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'HOST_PROTOCOL_VERSION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'HOST_PROTOCOL_VERSION',
@@ -3865,7 +3916,7 @@ describe('parseData', () => {
 
     test('FAIL', () => {
       const data = [0xf8]
-      const result = parseData(data, 'HOST_PROTOCOL_VERSION', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'HOST_PROTOCOL_VERSION', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'HOST_PROTOCOL_VERSION',
@@ -3881,7 +3932,7 @@ describe('parseData', () => {
       const data = [
         0xf0, 0x00, 0x30, 0x31, 0x30, 0x30, 0x45, 0x55, 0x52, 0x00, 0x00, 0x01, 0x03, 0x05, 0x0a, 0x14, 0x02, 0x02, 0x02, 0x00, 0x00, 0x64, 0x04,
       ]
-      const result = parseData(data, 'SETUP_REQUEST', protocolVersion, 'Banknote validator')
+      const result = parseData(data, 'SETUP_REQUEST', 6, 'Banknote validator')
 
       assert.deepEqual(result, {
         command: 'SETUP_REQUEST',
@@ -3905,7 +3956,7 @@ describe('parseData', () => {
         0xf0, 0x06, 0x30, 0x36, 0x30, 0x30, 0x45, 0x55, 0x52, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x07,
         0x45, 0x55, 0x52, 0x45, 0x55, 0x52, 0x45, 0x55, 0x52, 0x05, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00,
       ]
-      const result = parseData(data, 'SETUP_REQUEST', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SETUP_REQUEST', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SETUP_REQUEST',
@@ -3930,7 +3981,7 @@ describe('parseData', () => {
   describe('DISPLAY_OFF', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'DISPLAY_OFF', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'DISPLAY_OFF', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'DISPLAY_OFF',
@@ -3944,7 +3995,7 @@ describe('parseData', () => {
   describe('DISPLAY_ON', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'DISPLAY_ON', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'DISPLAY_ON', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'DISPLAY_ON',
@@ -3958,7 +4009,7 @@ describe('parseData', () => {
   describe('SET_CHANNEL_INHIBITS', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'SET_CHANNEL_INHIBITS', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'SET_CHANNEL_INHIBITS', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'SET_CHANNEL_INHIBITS',
@@ -3972,7 +4023,7 @@ describe('parseData', () => {
   describe('RESET', () => {
     test('OK', () => {
       const data = [0xf0]
-      const result = parseData(data, 'RESET', protocolVersion, deviceUnitType)
+      const result = parseData(data, 'RESET', 6, 'SMART payout fitted')
 
       assert.deepEqual(result, {
         command: 'RESET',

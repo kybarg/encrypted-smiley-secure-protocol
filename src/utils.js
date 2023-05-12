@@ -72,12 +72,6 @@ function int64LE(number) {
   return buffer
 }
 
-function int64BE(number) {
-  const buffer = Buffer.alloc(8)
-  buffer.writeBigInt64LE(BigInt(number))
-  return buffer
-}
-
 function int32LE(number) {
   const buffer = Buffer.alloc(4)
   buffer.writeInt32LE(number)
@@ -680,4 +674,6 @@ module.exports = {
   randHexArray,
   argsToByte,
   int64LE,
+  int32LE,
+  int16LE,
 }

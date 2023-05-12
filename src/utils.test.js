@@ -1,4 +1,4 @@
-const { absBigInt, encrypt, decrypt, randomInt, CRC16, randHexArray, argsToByte, int64LE, int32LE, int16LE } = require('./utils')
+const { absBigInt, encrypt, decrypt, randomInt, CRC16, randHexArray, int64LE, int32LE, int16LE } = require('./utils')
 
 describe('absBigInt', () => {
   test('should return 1', () => {

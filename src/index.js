@@ -59,6 +59,10 @@ class SSP extends EventEmitter {
 
     await Promise.race([once(this.port, 'open'), once(this.port, 'close')])
 
+    this.port.on('data', buffer => {
+      this.emit('DATA_RECEIVED', { command: this.currentCommand, data: [...buffer], author: 'COM' })
+    })
+
     this.port.on('error', error => {
       this.eventEmitter.emit('error', error)
     })
@@ -287,6 +291,7 @@ class SSP extends EventEmitter {
     this.commandSendAttempts = 0
 
     const buffer = this.getPacket(command, argsToByte(command, args, this.protocol_version))
+    this.emit('DATA_SENT', { command, data: [...buffer], author: 'HOST' })
     const result = await this.sendToDevice(command, buffer)
 
     // update sequence after response received

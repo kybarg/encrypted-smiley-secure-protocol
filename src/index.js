@@ -320,6 +320,7 @@ class SSP extends EventEmitter {
     }, this.timeout)
 
     try {
+      this.currentCommand = command
       this.port.write(txBuffer)
       this.port.drain()
       this.commandSendAttempts += 1

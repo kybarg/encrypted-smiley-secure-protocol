@@ -59,10 +59,6 @@ class SSP extends EventEmitter {
 
     await Promise.race([once(this.port, 'open'), once(this.port, 'close')])
 
-    this.port.on('data', buffer => {
-      this.emit('DATA_RECEIVED', { command: this.currentCommand, data: [...buffer] })
-    })
-
     this.port.on('error', error => {
       this.eventEmitter.emit('error', error)
     })

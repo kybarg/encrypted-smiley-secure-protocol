@@ -374,6 +374,7 @@ class SSP extends EventEmitter {
       this.polling = true
     } else if (status === false) {
       this.polling = false
+      clearTimeout(this.pollTimeout)
 
       return new Promise(resolve => {
         const interval = setInterval(() => {

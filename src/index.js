@@ -326,13 +326,19 @@ class SSP extends EventEmitter {
       this.commandSendAttempts += 1
 
       const [rxBuffer] = await once(this.eventEmitter, 'DATA')
-      await new Promise(resolve => setTimeout(resolve, 100))
 
       this.processing = false
       clearTimeout(this.commandTimeout)
 
       if (this.debug) {
         console.log('COM ->', chalk.yellow(rxBuffer.toString('hex')), chalk.green(command), this.count, Date.now())
+      }
+
+      const HOST_SEQ_SLAVE_ID = txBuffer[1]
+      const COM_SEQ_SLAVE_ID = rxBuffer[1]
+
+      if (HOST_SEQ_SLAVE_ID !== COM_SEQ_SLAVE_ID) {
+        throw new Error('Sequence flag mismatch')
       }
 
       try {
@@ -345,6 +351,7 @@ class SSP extends EventEmitter {
       }
     } catch (error) {
       this.processing = false
+      clearTimeout(this.commandTimeout)
 
       // Retry sending same command
       // After 20 retries, the master will assume that the slave has crashed.

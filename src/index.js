@@ -332,12 +332,12 @@ class SSP extends EventEmitter {
       console.log('COM <-', chalk.cyan(txBuffer.toString('hex')), chalk.green(command), this.count, Date.now())
     }
 
-    let debug = {
+    const debug = {
       command,
       tx: {
         createdAt: Date.now(),
-        encrypted: txBufferPlain,
-        plain: txBuffer,
+        encrypted: txBuffer,
+        plain: txBufferPlain,
       },
       rx: {
         createdAt: null,
@@ -346,16 +346,12 @@ class SSP extends EventEmitter {
       },
     }
 
-    // Wait 1 second for reply.
-    this.commandTimeout = setTimeout(() => {
-      this.eventEmitter.emit('error', {
-        success: false,
-        status: 'TIMEOUT',
-        command,
-      })
-    }, this.timeout)
-
     try {
+      // Wait 1 second for reply.
+      this.commandTimeout = setTimeout(() => {
+        this.eventEmitter.emit('error', new Error('TIMEOUT'))
+      }, 500)
+
       this.currentCommand = command
       this.port.write(txBuffer)
       this.port.drain()
@@ -384,7 +380,7 @@ class SSP extends EventEmitter {
         const rxBufferPlain = Buffer.from([...rxBuffer.slice(0, 2), DATA.length, ...DATA, ...CRC16([rxBuffer[1], DATA.length, ...DATA])])
         debug.rx.plain = rxBufferPlain
 
-        this.emit('DEBUG', { command, data: debug })
+        this.emit('DEBUG', debug)
 
         return this.parsePacketData(DATA, command)
       } catch (error) {

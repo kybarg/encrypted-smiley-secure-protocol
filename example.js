@@ -1,4 +1,4 @@
-const SSP =  require('./src/index.js');
+const SSP = require('./src/index.js')
 const channels = [{ value: 0, country_code: 'XXX' }]
 
 const serialPortConfig = {
@@ -14,6 +14,10 @@ const eSSP = new SSP({
   timeout: 3000, // default: 3000
   encryptAllCommand: true, // default: true
   fixedKey: '0123456701234567', // default: '0123456701234567'
+})
+
+eSSP.on('DEBUG', data => {
+  // console.log(data)
 })
 
 eSSP.on('OPEN', () => {
@@ -42,9 +46,9 @@ eSSP.on('NOTE_REJECTED', result => {
 })
 
 eSSP
-  .open('COM9', serialPortConfig)
+  .open('COM8', serialPortConfig)
   .then(() => eSSP.command('SYNC'))
-  // .then(() => eSSP.command('HOST_PROTOCOL_VERSION', { version: 6 }))
+  .then(() => eSSP.command('HOST_PROTOCOL_VERSION', { version: 6 }))
   .then(() => eSSP.initEncryption())
   .then(() => eSSP.command('GET_SERIAL_NUMBER'))
   .then(result => {
@@ -54,11 +58,12 @@ eSSP
   .then(() => eSSP.command('SETUP_REQUEST'))
   .then(result => {
     for (let i = 0; i < result.info.channel_value.length; i++) {
-      channels[result.info.channel_value[i]] = {
+      channels[i] = {
         value: result.info.expanded_channel_value[i],
         country_code: result.info.expanded_channel_country_code[i],
       }
     }
+    console.log('channels', channels)
     return
   })
   .then(() =>

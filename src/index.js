@@ -8,6 +8,9 @@ const commandList = require('./command.js')
 const { SSPParser } = require('./parser/index.js')
 const { engines } = require('../package.json')
 
+const STX = 0x7f
+const STEX = 0x7e
+
 class SSP extends EventEmitter {
   constructor(param) {
     super()
@@ -114,95 +117,110 @@ class SSP extends EventEmitter {
     return result
   }
 
-  getPacket(command, args) {
-    const STX = 0x7f
-    const STEX = 0x7e
-
-    if (commandList[command].args && args.length === 0) {
+  /**
+   *
+   * @param {String} command
+   * @param {(Array|Buffer)} argBytes
+   * @returns {Buffer}
+   */
+  getPacket(command, argBytes, encrypted = false) {
+    if (commandList[command].args && argBytes.length === 0) {
       throw new Error('Args missings')
     }
 
-    let LENGTH = args.length + 1
+    if (commandList[command].encrypted && this.encryptKey === null) {
+      throw new Error('Command requires ecnryption')
+    }
+
     const SEQ_SLAVE_ID = this.getSequence()
-    let DATA = [commandList[command].code].concat(...args)
+    let DATA = [commandList[command].code, ...argBytes]
 
     // Encrypted packet
-    if (this.encryptKey !== null && (commandList[command].encrypted || this.encryptAllCommand)) {
+    if (encrypted) {
       const eCOUNT = Buffer.alloc(4)
       eCOUNT.writeUInt32LE(this.count, 0)
-      let eCommandLine = [DATA.length].concat([...eCOUNT], DATA)
-      const ePACKING = randHexArray(Math.ceil((eCommandLine.length + 2) / 16) * 16 - (eCommandLine.length + 2))
-      eCommandLine = eCommandLine.concat(ePACKING)
-      eCommandLine = eCommandLine.concat(CRC16(eCommandLine))
 
-      const eDATA = [...encrypt(this.encryptKey, Buffer.from(eCommandLine))]
+      /**
+       * Random data to make the length of the length +count + data + packing + CRCL + CRCH to be a multiple of 16 bytes
+       * 7 = DATA.length (1 byte) + eCOUNT (4 bytes) + eCRCL (1 byte) + eCRCH (1 byte)
+       */
+      const ePACKING = randHexArray(Math.ceil((DATA.length + 7) / 16) * 16 - (DATA.length + 7))
 
-      DATA = [STEX].concat(eDATA)
-      LENGTH = DATA.length
+      // data to calculate CRC on
+      const crcPacket = [DATA.length, ...eCOUNT, ...DATA, ...ePACKING]
+      const ENCRYPTED_DATA = encrypt(this.encryptKey, Buffer.from([...crcPacket, ...CRC16(crcPacket)]))
+
+      DATA = [STEX, ...ENCRYPTED_DATA]
     }
 
-    const tmp = [SEQ_SLAVE_ID].concat(LENGTH, DATA)
-    const comandLine = Buffer.from([STX].concat(tmp, CRC16(tmp)).join(',').replace(/,127/g, ',127,127').split(','))
+    // data to calculate CRC on
+    const crcPacket = [SEQ_SLAVE_ID, DATA.length, ...DATA]
+    const PACKET = [STX, ...crcPacket, ...CRC16(crcPacket)]
 
-    return comandLine
+    const STAFFED_PACKET = Buffer.from(PACKET.join(',').replace(/,127/g, ',127,127').split(','))
+
+    return STAFFED_PACKET
   }
 
-  parsePacket(buffer, command) {
-    buffer = [...buffer]
-    if (buffer[0] === 0x7f) {
-      buffer = buffer.slice(1)
-      let DATA = buffer.slice(2, buffer[1] + 2)
-      const CRC = CRC16(buffer.slice(0, buffer[1] + 2))
-
-      if (CRC[0] !== buffer[buffer.length - 2] || CRC[1] !== buffer[buffer.length - 1]) {
-        throw new Error('Wrong CRC16')
-      }
-
-      if (this.keys.key !== null && DATA[0] === 0x7e) {
-        DATA = decrypt(this.encryptKey, Buffer.from(DATA.slice(1)))
-        if (this.debug) {
-          console.log('Decrypted:', chalk.red(Buffer.from(DATA).toString('hex')))
-        }
-        const eLENGTH = DATA[0]
-        const eCOUNT = Buffer.from(DATA.slice(1, 5)).readInt32LE()
-        DATA = DATA.slice(5, eLENGTH + 5)
-
-        if (eCOUNT !== this.count + 1) {
-          throw new Error('Encrypted counter mismatch')
-        }
-
-        this.count += 1
-      }
-
-      const parsedData = parseData(DATA, command, this.protocol_version, this.unit_type)
-
-      if (this.debug) {
-        console.log(parsedData)
-      }
-
-      if (parsedData.success) {
-        if (command === 'REQUEST_KEY_EXCHANGE') {
-          try {
-            this.createSSPHostEncryptionKey(parsedData.info.key)
-          } catch (error) {
-            throw new Error('Key exchange error')
-          }
-        } else if (command === 'SETUP_REQUEST') {
-          this.protocol_version = parsedData.info.protocol_version
-          this.unit_type = parsedData.info.unit_type
-        } else if (command === 'UNIT_DATA') {
-          this.unit_type = parsedData.info.unit_type
-        }
-      } else {
-        if (command === 'HOST_PROTOCOL_VERSION') {
-          this.protocol_version = undefined
-        }
-      }
-
-      return parsedData
+  extractPacketData(buffer) {
+    if (buffer[0] !== STX) {
+      throw new Error('Unknown response')
     }
 
-    throw new Error('Unknown response')
+    buffer = buffer.slice(1)
+    let DATA = buffer.slice(2, buffer[1] + 2)
+    const CRC = CRC16(buffer.slice(0, buffer[1] + 2))
+
+    if (CRC[0] !== buffer[buffer.length - 2] || CRC[1] !== buffer[buffer.length - 1]) {
+      throw new Error('Wrong CRC16')
+    }
+
+    if (this.keys.key !== null && DATA[0] === STEX) {
+      DATA = decrypt(this.encryptKey, Buffer.from(DATA.slice(1)))
+      if (this.debug) {
+        console.log('Decrypted:', chalk.red(Buffer.from(DATA).toString('hex')))
+      }
+      const eLENGTH = DATA[0]
+      const eCOUNT = Buffer.from(DATA.slice(1, 5)).readInt32LE()
+      DATA = DATA.slice(5, eLENGTH + 5)
+
+      if (eCOUNT !== this.count + 1) {
+        throw new Error('Encrypted counter mismatch')
+      }
+
+      this.count += 1
+    }
+
+    return DATA
+  }
+
+  parsePacketData(buffer, command) {
+    const parsedData = parseData(buffer, command, this.protocol_version, this.unit_type)
+
+    if (this.debug) {
+      console.log(parsedData)
+    }
+
+    if (parsedData.success) {
+      if (command === 'REQUEST_KEY_EXCHANGE') {
+        try {
+          this.createSSPHostEncryptionKey(parsedData.info.key)
+        } catch (error) {
+          throw new Error('Key exchange error')
+        }
+      } else if (command === 'SETUP_REQUEST') {
+        this.protocol_version = parsedData.info.protocol_version
+        this.unit_type = parsedData.info.unit_type
+      } else if (command === 'UNIT_DATA') {
+        this.unit_type = parsedData.info.unit_type
+      }
+    } else {
+      if (command === 'HOST_PROTOCOL_VERSION') {
+        this.protocol_version = undefined
+      }
+    }
+
+    return parsedData
   }
 
   initiateSSPHostKeys() {
@@ -290,9 +308,13 @@ class SSP extends EventEmitter {
 
     this.commandSendAttempts = 0
 
-    const buffer = this.getPacket(command, argsToByte(command, args, this.protocol_version))
+    const encrypted = this.encryptKey !== null && (commandList[command].encrypted || this.encryptAllCommand)
+    const argBytes = argsToByte(command, args, this.protocol_version)
+    const buffer = this.getPacket(command, argBytes, encrypted)
+    const bufferPlain = this.getPacket(command, argBytes, false)
+
     this.emit('DATA_SENT', { command, data: [...buffer], author: 'HOST' })
-    const result = await this.sendToDevice(command, buffer)
+    const result = await this.sendToDevice(command, buffer, bufferPlain)
 
     // update sequence after response received
     this.sequence = this.sequence === 0x00 ? 0x80 : 0x00
@@ -304,10 +326,24 @@ class SSP extends EventEmitter {
     return result
   }
 
-  async sendToDevice(command, txBuffer) {
+  async sendToDevice(command, txBuffer, txBufferPlain) {
     this.processing = true
     if (this.debug) {
       console.log('COM <-', chalk.cyan(txBuffer.toString('hex')), chalk.green(command), this.count, Date.now())
+    }
+
+    let debug = {
+      command,
+      tx: {
+        createdAt: Date.now(),
+        encrypted: txBufferPlain,
+        plain: txBuffer,
+      },
+      rx: {
+        createdAt: null,
+        encrypted: null,
+        plain: null,
+      },
     }
 
     // Wait 1 second for reply.
@@ -326,6 +362,8 @@ class SSP extends EventEmitter {
       this.commandSendAttempts += 1
 
       const [rxBuffer] = await once(this.eventEmitter, 'DATA')
+      debug.rx.createdAt = Date.now()
+      debug.rx.encrypted = rxBuffer
 
       this.processing = false
       clearTimeout(this.commandTimeout)
@@ -342,8 +380,16 @@ class SSP extends EventEmitter {
       }
 
       try {
-        return this.parsePacket(rxBuffer, command)
+        const DATA = this.extractPacketData(rxBuffer)
+        const rxBufferPlain = Buffer.from([...rxBuffer.slice(0, 2), DATA.length, ...DATA, ...CRC16([rxBuffer[1], DATA.length, ...DATA])])
+        debug.rx.plain = rxBufferPlain
+
+        this.emit('DEBUG', { command, data: debug })
+
+        return this.parsePacketData(DATA, command)
       } catch (error) {
+        this.emit('DEBUG', { command, data: debug })
+
         return {
           success: false,
           error,
@@ -353,10 +399,13 @@ class SSP extends EventEmitter {
       this.processing = false
       clearTimeout(this.commandTimeout)
 
+      debug.rx.createdAt = Date.now()
+      this.emit('DEBUG', { command, data: debug })
+
       // Retry sending same command
       // After 20 retries, the master will assume that the slave has crashed.
       if (this.commandSendAttempts < 20) {
-        return this.sendToDevice(command, txBuffer)
+        return this.sendToDevice(command, txBuffer, txBufferPlain)
       } else {
         throw {
           success: false,

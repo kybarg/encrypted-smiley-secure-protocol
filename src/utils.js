@@ -84,6 +84,12 @@ function int16LE(number) {
   return buffer
 }
 
+function uInt16LE(number) {
+  const buffer = Buffer.alloc(2)
+  buffer.writeUInt16LE(number)
+  return buffer
+}
+
 function argsToByte(command, args, protocolVersion) {
   if (args !== undefined) {
     if (['SET_GENERATOR', 'SET_MODULUS', 'REQUEST_KEY_EXCHANGE'].includes(command)) {
@@ -95,7 +101,7 @@ function argsToByte(command, args, protocolVersion) {
       return [args.route === 'payout' ? 0 : 1].concat([...(args.isHopper ? int16LE(args.value) : int32LE(args.value))])
     } else if (command === 'SET_CHANNEL_INHIBITS') {
       return [
-        ...int16LE(
+        ...uInt16LE(
           parseInt(
             args.channels
               .reverse()

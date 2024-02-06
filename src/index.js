@@ -350,7 +350,7 @@ class SSP extends EventEmitter {
       // Wait 1 second for reply.
       this.commandTimeout = setTimeout(() => {
         this.eventEmitter.emit('error', new Error('TIMEOUT'))
-      }, 500)
+      }, 1000)
 
       this.currentCommand = command
       this.port.write(txBuffer)
@@ -384,7 +384,7 @@ class SSP extends EventEmitter {
 
         return this.parsePacketData(DATA, command)
       } catch (error) {
-        this.emit('DEBUG', { command, data: debug })
+        this.emit('DEBUG', debug)
 
         return {
           success: false,
@@ -396,7 +396,7 @@ class SSP extends EventEmitter {
       clearTimeout(this.commandTimeout)
 
       debug.rx.createdAt = Date.now()
-      this.emit('DEBUG', { command, data: debug })
+      this.emit('DEBUG', debug)
 
       // Retry sending same command
       // After 20 retries, the master will assume that the slave has crashed.

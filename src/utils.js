@@ -35,6 +35,35 @@ function decrypt(key, data) {
   return decryptedData
 }
 
+/**
+ * Reads bytes from a Buffer starting from the specified index with the given length.
+ *
+ * @param {Buffer} buffer - The Buffer from which to read bytes.
+ * @param {number} startIndex - The starting index from which to begin reading.
+ * @param {number} length - The number of bytes to read.
+ * @returns {Buffer} - A new Buffer containing the extracted bytes.
+ * @throws {Error} - Throws an error if the input is not a Buffer, if the start index is invalid,
+ *                   or if the length exceeds the buffer size.
+ */
+function readBytesFromBuffer(buffer, startIndex, length) {
+  if (!(buffer instanceof Buffer)) {
+    throw new Error('Input must be a Buffer object')
+  }
+
+  // Ensure the provided index is within the buffer's bounds
+  if (startIndex < 0 || startIndex >= buffer.length) {
+    throw new Error('Invalid start index')
+  }
+
+  // Ensure the requested length doesn't exceed the buffer's remaining size
+  if (length < 0 || startIndex + length > buffer.length) {
+    throw new Error('Invalid length or exceeds buffer size')
+  }
+
+  // Use subarray to extract the specified range of bytes
+  return buffer.subarray(startIndex, startIndex + length)
+}
+
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min
 }
@@ -242,32 +271,56 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
     if (currentCommand === 'REQUEST_KEY_EXCHANGE') {
       result.info.key = data
     } else if (currentCommand === 'SETUP_REQUEST') {
-      result.info.unit_type = unitType[data[0]]
-      result.info.firmware_version = (parseInt(Buffer.from(data.slice(1, 5)).toString()) / 100).toFixed(2)
-      result.info.country_code = Buffer.from(data.slice(5, 8)).toString()
+      data = Buffer.from(data)
 
-      if (data[0] === 3) {
-        result.info.protocol_version = parseInt(data.slice(8, 9).toString('hex'))
-        const n = parseInt(Buffer.from(data.slice(9, 10)).toString('hex'))
-        result.info.coin_values = data.slice(10, 10 + n * 2)
-        result.info.country_codes_for_values = Buffer.from(data.slice(10 + n * 2, 10 + n * 2 + n * 3))
-          .toString()
-          .match(/.{3}/g)
-      } else {
-        result.info.value_multiplier = parseInt(Buffer.from(data.slice(8, 11)).toString('hex'))
-        const n = parseInt(Buffer.from(data.slice(11, 12)).toString('hex'))
-        result.info.channel_value = data.slice(12, 12 + n)
-        result.info.channel_security = data.slice(12 + n, 12 + n * 2)
-        result.info.real_value_multiplier = parseInt(Buffer.from(data.slice(12 + n * 2, 12 + n * 2 + 3)).toString('hex'), 16)
-        result.info.protocol_version = parseInt(data.slice(15 + n * 2, 15 + n * 2 + 1).toString('hex'))
+      // Common for all device types
+      result.info = {
+        unit_type: unitType[data[0]],
+        firmware_version: (parseInt(readBytesFromBuffer(data, 1, 4).toString()) / 100).toFixed(2),
+        country_code: readBytesFromBuffer(data, 5, 3).toString(),
+      }
+
+      const isSmartHopper = data[0] === 3
+
+      if (isSmartHopper) {
+        // Smart Hopper specific
+        const protocol_version = data.readUInt8(8)
+        const n = data.readUInt8(9)
+
+        Object.assign(result.info, {
+          protocol_version,
+          number_of_coin_values: n,
+          coin_values: Array.from({ length: n }, (_, i) => readBytesFromBuffer(data, 10, n * 2).readInt16LE(i * 2)),
+        })
+
         if (result.info.protocol_version >= 6) {
-          result.info.expanded_channel_country_code = Buffer.from(data.slice(16 + n * 2, 16 + n * 2 + n * 3))
-            .toString()
-            .match(/.{3}/g)
-          result.info.expanded_channel_value = []
-          for (let i = 0; i < n; i++) {
-            result.info.expanded_channel_value[i] = Buffer.from(data.slice(16 + n * 5 + i * 4, 20 + n * 5 + i * 4)).readInt32LE()
-          }
+          Object.assign(result.info, {
+            country_codes_for_values: readBytesFromBuffer(data, 10 + n * 2, n * 3)
+              .toString()
+              .match(/.{3}/g),
+          })
+        }
+      } else {
+        // Other devices
+        const n = data.readUInt8(11)
+        const value_multiplier = data.readUIntBE(8, 3)
+
+        Object.assign(result.info, {
+          value_multiplier,
+          number_of_channels: n,
+          channel_value: Array.from(readBytesFromBuffer(data, 12, n).map(value => value * value_multiplier)),
+          channel_security: Array.from(data.slice(12 + n, 12 + n * 2)),
+          real_value_multiplier: data.readUIntBE(12 + n * 2, 3),
+          protocol_version: data.readUInt8(15 + n * 2),
+        })
+
+        if (result.info.protocol_version >= 6) {
+          Object.assign(result.info, {
+            expanded_channel_country_code: readBytesFromBuffer(data, 16 + n * 2, n * 3)
+              .toString()
+              .match(/.{3}/g),
+            expanded_channel_value: Array.from({ length: n }, (_, i) => readBytesFromBuffer(data, 16 + n * 5, n * 4).readInt32LE(i * 4)),
+          })
         }
       }
     } else if (currentCommand === 'GET_SERIAL_NUMBER') {
@@ -390,9 +443,12 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
       result.info.cashBoxPayAcive = tmp[3] === 0 || tmp[3] === undefined ? false : true
     } else if (currentCommand === 'POLL' || currentCommand === 'POLL_WITH_ACK') {
       if (data[0] !== undefined && statusDesc[data[0]] !== undefined) {
+        data = Buffer.from(data)
+
         result.info = []
 
         let k = 0
+
         while (k < data.length) {
           const el = data[k]
 
@@ -402,142 +458,181 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
           }
 
           const chunk = data.slice(k, data.length)
+          const info = {
+            code: chunk[0],
+            name: statusDesc[chunk[0]].name,
+            description: statusDesc[chunk[0]].description,
+          }
 
-          const info = {}
-          info.code = chunk[0]
-          info.name = statusDesc[chunk[0]].name
-          info.description = statusDesc[chunk[0]].description
+          switch (info.name) {
+            case 'SLAVE_RESET':
+            case 'NOTE_REJECTING':
+            case 'NOTE_REJECTED':
+            case 'NOTE_STACKING':
+            case 'NOTE_STACKED':
+            case 'SAFE_NOTE_JAM':
+            case 'UNSAFE_NOTE_JAM':
+            case 'DISABLED':
+            case 'STACKER_FULL':
+            case 'CASHBOX_REMOVED':
+            case 'CASHBOX_REPLACED':
+            case 'BAR_CODE_TICKET_VALIDATED':
+            case 'BAR_CODE_TICKET_ACKNOWLEDGE':
+            case 'NOTE_PATH_OPEN':
+            case 'CHANNEL_DISABLE':
+            case 'INITIALISING':
+            case 'COIN_MECH_JAMMED':
+            case 'COIN_MECH_RETURN_PRESSED':
+            case 'EMPTYING':
+            case 'EMPTIED':
+            case 'COIN_MECH_ERROR':
+            case 'NOTE_STORED_IN_PAYOUT':
+            case 'PAYOUT_OUT_OF_SERVICE':
+            case 'JAM_RECOVERY':
+            case 'NOTE_FLOAT_REMOVED':
+            case 'NOTE_FLOAT_ATTACHED':
+            case 'DEVICE_FULL':
+              k += 1
+              break
 
-          if (
-            info.name === 'READ_NOTE' ||
-            info.name === 'CREDIT_NOTE' ||
-            info.name === 'NOTE_CLEARED_FROM_FRONT' ||
-            info.name === 'NOTE_CLEARED_TO_CASHBOX'
-          ) {
-            info.channel = chunk[1]
-            k += 2
-          } else if (info.name === 'FRAUD_ATTEMPT') {
-            const smartDevice = [unitType[3], unitType[6]].includes(deviceUnitType)
-            if (protocolVersion >= 6 && smartDevice) {
-              const count = chunk[1]
-              info.value = []
-              for (let i = 0; i < count; i++) {
-                info.value[i] = {
-                  value: Buffer.from(chunk.slice(i * 7 + 2, i * 7 + 6)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 7 + 6, i * 7 + 9)).toString(),
-                }
-              }
-              k += 1 + count * 7
-            } else if (protocolVersion < 6 && smartDevice) {
-              info.value = Buffer.from(chunk.slice(1, 5)).readInt32LE()
-              k += 5
-            } else {
-              info.channel = chunk[1]
+            case 'READ_NOTE':
+            case 'CREDIT_NOTE':
+            case 'NOTE_CLEARED_FROM_FRONT':
+            case 'NOTE_CLEARED_TO_CASHBOX':
+              info.channel = data.readUInt8(k + 1)
               k += 2
-            }
-          } else if (
-            info.name === 'DISPENSING' ||
-            info.name === 'DISPENSED' ||
-            info.name === 'JAMMED' ||
-            info.name === 'HALTED' ||
-            info.name === 'FLOATING' ||
-            info.name === 'FLOATED' ||
-            info.name === 'TIME_OUT' ||
-            info.name === 'CASHBOX_PAID' ||
-            info.name === 'COIN_CREDIT' ||
-            info.name === 'SMART_EMPTYING' ||
-            info.name === 'SMART_EMPTIED'
-          ) {
-            if (protocolVersion >= 6) {
-              const count = chunk[1]
-              info.value = []
-              for (let i = 0; i < count; i++) {
-                info.value[i] = {
-                  value: Buffer.from(chunk.slice(i * 7 + 2, i * 7 + 6)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 7 + 6, i * 7 + 9)).toString(),
-                }
-              }
-              k += 1 + count * 7
-            } else {
-              info.value = Buffer.from(chunk.slice(1, 5)).readInt32LE()
-              k += 5
-            }
-          } else if (info.name === 'ERROR_DURING_PAYOUT') {
-            if (protocolVersion >= 7) {
-              const count = chunk[1]
-              info.value = []
-              for (let i = 0; i < count; i++) {
-                info.value[i] = {
-                  value: Buffer.from(chunk.slice(i * 7 + 2, i * 7 + 6)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 7 + 6, i * 7 + 9)).toString(),
-                }
-              }
-              info.errorCode = chunk[count * 7 + 2] === 0 ? 'wrong_recognition' : 'jammed'
+              break
 
-              k += 2 + count * 7
-            }
-          } else if (info.name === 'NOTE_TRANSFERED_TO_STACKER') {
-            if (protocolVersion >= 6) {
-              info.value = {
-                value: Buffer.from(chunk.slice(1, 5)).readInt32LE(),
-                country_code: Buffer.from(chunk.slice(5, 8)).toString(),
-              }
-              k += 8
-            } else {
-              info.value = Buffer.from(chunk.slice(0, 4)).readInt32LE()
-              k += 5
-            }
-          } else if (
-            info.name === 'NOTE_HELD_IN_BEZEL' ||
-            info.name === 'NOTE_PAID_INTO_STACKER_AT_POWER-UP' ||
-            info.name === 'NOTE_PAID_INTO_STORE_AT_POWER-UP' ||
-            info.name === 'NOTE_DISPENSED_AT_POWER-UP'
-          ) {
-            if (protocolVersion >= 8) {
-              info.value = {
-                value: Buffer.from(chunk.slice(1, 5)).readInt32LE(),
-                country_code: Buffer.from(chunk.slice(5, 8)).toString(),
-              }
-              k += 8
-            }
-          } else if (info.name === 'INCOMPLETE_PAYOUT') {
-            if (protocolVersion < 6) {
-              info.dispensed = Buffer.from(chunk.slice(1, 5)).readInt32LE()
-              info.requested = Buffer.from(chunk.slice(5, 9)).readInt32LE()
-              k += 9
-            } else {
-              const count = chunk[1]
-              info.value = []
-              for (let i = 0; i < count; i++) {
-                info.value[i] = {
-                  dispensed: Buffer.from(chunk.slice(i * 11 + 2, i * 11 + 6)).readInt32LE(),
-                  requested: Buffer.from(chunk.slice(i * 11 + 6, i * 11 + 10)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 11 + 10, i * 11 + 13)).toString(),
-                }
-              }
+            case 'FRAUD_ATTEMPT':
+              const smartDevice = [unitType[3], unitType[6]].includes(deviceUnitType)
+              const isProtocol6 = protocolVersion >= 6
 
-              k += 1 + count * 11
-            }
-          } else if (info.name === 'INCOMPLETE_FLOAT') {
-            if (protocolVersion < 6) {
-              info.dispensed = Buffer.from(chunk.slice(1, 5)).readInt32LE()
-              info.floated = Buffer.from(chunk.slice(5, 9)).readInt32LE()
-              k += 9
-            } else {
-              const count = chunk[1]
-              info.value = []
-              for (let i = 0; i < count; i++) {
-                info.value[i] = {
-                  floated: Buffer.from(chunk.slice(i * 11 + 2, i * 11 + 6)).readInt32LE(),
-                  requested: Buffer.from(chunk.slice(i * 11 + 6, i * 11 + 10)).readInt32LE(),
-                  country_code: Buffer.from(chunk.slice(i * 11 + 10, i * 11 + 13)).toString(),
-                }
+              if (isProtocol6 && smartDevice) {
+                const length = data[k + 1]
+                info.value = Array.from({ length }, (_, i) => ({
+                  value: data.readUInt32LE(k + 2 + i * 7),
+                  country_code: readBytesFromBuffer(data, k + 6 + i * 7, 3).toString(),
+                }))
+
+                k += 2 + length * 7
+              } else if (smartDevice) {
+                info.value = data.readInt32LE(k + 1)
+                k += 5
+              } else {
+                info.channel = chunk[1]
+                k += 2
+              }
+              break
+
+            case 'DISPENSING':
+            case 'DISPENSED':
+            case 'JAMMED':
+            case 'HALTED':
+            case 'FLOATING':
+            case 'FLOATED':
+            case 'TIME_OUT':
+            case 'CASHBOX_PAID':
+            case 'COIN_CREDIT':
+            case 'SMART_EMPTYING':
+            case 'SMART_EMPTIED':
+              if (protocolVersion >= 6) {
+                const length = data[k + 1]
+                info.value = Array.from({ length }, (_, i) => ({
+                  value: data.readUInt32LE(k + 2 + i * 7),
+                  country_code: readBytesFromBuffer(data, k + 6 + i * 7, 3).toString(),
+                }))
+
+                k += 2 + length * 7
+              } else {
+                info.value = data.readInt32LE(k + 1)
+                k += 5
+              }
+              break
+
+            case 'INCOMPLETE_PAYOUT':
+              if (protocolVersion >= 6) {
+                const length = data[k + 1]
+                info.value = Array.from({ length }, (_, i) => ({
+                  dispensed: data.readUInt32LE(k + 2 + i * 11),
+                  requested: data.readUInt32LE(k + 6 + i * 11),
+                  country_code: readBytesFromBuffer(data, k + 10 + i * 11, 3).toString(),
+                }))
+
+                k += 2 + length * 11
+              } else {
+                info.dispensed = data.readInt32LE(k + 1)
+                info.requested = data.readInt32LE(k + 5)
+                k += 9
+              }
+              break
+
+            case 'INCOMPLETE_FLOAT':
+              if (protocolVersion >= 6) {
+                const length = data[k + 1]
+                info.value = Array.from({ length }, (_, i) => ({
+                  floated: data.readUInt32LE(k + 2 + i * 11),
+                  requested: data.readUInt32LE(k + 6 + i * 11),
+                  country_code: readBytesFromBuffer(data, k + 10 + i * 11, 3).toString(),
+                }))
+
+                k += 2 + length * 11
+              } else {
+                info.floated = data.readInt32LE(k + 1)
+                info.requested = data.readInt32LE(k + 5)
+                k += 9
+              }
+              break
+
+            case 'ERROR_DURING_PAYOUT':
+              const errors = {
+                0x00: 'Note not being correctly detected as it is routed',
+                0x01: 'Note jammed in transport',
               }
 
-              k += 1 + count * 11
-            }
-          } else {
-            k += 1
+              if (protocolVersion >= 7) {
+                const length = data[k + 1]
+                info.value = Array.from({ length }, (_, i) => ({
+                  value: data.readUInt32LE(k + 2 + i * 7),
+                  country_code: readBytesFromBuffer(data, k + 6 + i * 7, 3).toString(),
+                }))
+
+                info.error = errors[data.readUInt8(k + 2 + length * 7)]
+
+                k += 3 + length * 7
+              } else {
+                info.error = errors[data.readUInt8(k + 1)]
+                k += 2
+              }
+              break
+
+            case 'NOTE_TRANSFERED_TO_STACKER':
+            case 'NOTE_DISPENSED_AT_POWER-UP':
+              if (protocolVersion >= 6) {
+                info.value = {
+                  value: data.readUInt32LE(k + 1),
+                  country_code: readBytesFromBuffer(data, k + 5, 3).toString(),
+                }
+
+                k += 8
+              }
+              break
+
+            case 'NOTE_HELD_IN_BEZEL':
+            case 'NOTE_PAID_INTO_STACKER_AT_POWER-UP':
+            case 'NOTE_PAID_INTO_STORE_AT_POWER-UP':
+              if (protocolVersion >= 8) {
+                info.value = {
+                  value: data.readUInt32LE(k + 1),
+                  country_code: readBytesFromBuffer(data, k + 5, 3).toString(),
+                }
+
+                k += 8
+              }
+              break
+
+            default:
+              k += 1
+              break
           }
 
           result.info.push(info)

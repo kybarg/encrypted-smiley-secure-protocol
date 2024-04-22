@@ -26,7 +26,7 @@ module.exports = {
     'node/no-extraneous-import': [
       'error',
       {
-        allowModules: ['sinon', 'chai'], //this gets pulled from monorepo root where the tests are run
+        allowModules: ['chai'], //this gets pulled from monorepo root where the tests are run
       },
     ],
     'node/no-missing-import': 'off',

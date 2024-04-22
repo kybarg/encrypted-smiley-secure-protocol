@@ -12,9 +12,13 @@ const eSSP = new SSP({
   id: 0x00,
   debug: true, // default: false
   timeout: 3000, // default: 3000
-  encryptAllCommand: true, // default: true
+  encryptAllCommand: false, // default: true
   fixedKey: '0123456701234567', // default: '0123456701234567'
 })
+
+// eSSP.on('DATA_RECEIVED', data => {
+//   console.log(data)
+// })
 
 eSSP.on('DEBUG', data => {
   // console.log(data)
@@ -46,11 +50,12 @@ eSSP.on('NOTE_REJECTED', result => {
 })
 
 eSSP
-  .open('COM8', serialPortConfig)
+  .open('COM9', serialPortConfig)
   .then(() => eSSP.command('SYNC'))
   .then(() => eSSP.command('HOST_PROTOCOL_VERSION', { version: 6 }))
   .then(() => eSSP.initEncryption())
   .then(() => eSSP.command('GET_SERIAL_NUMBER'))
+  .then(() => eSSP.command('UNIT_DATA'))
   .then(result => {
     console.log('SERIAL NUMBER:', result.info.serial_number)
     return

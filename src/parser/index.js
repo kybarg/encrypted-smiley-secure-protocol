@@ -28,7 +28,7 @@ class SSPParser extends Transform {
         // restart the packet
         if (this.checkStuff == 1) {
           if (byte != SSP_STX) {
-            this.buffer = Buffer.concat([this.buffer, Buffer.from([SSP_STX, byte])])
+            this.buffer = Buffer.from([SSP_STX, byte])
             this.counter = 2
           } else {
             this.buffer = Buffer.concat([this.buffer, Buffer.from([byte])])

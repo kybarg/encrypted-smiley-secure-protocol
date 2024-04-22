@@ -254,7 +254,7 @@ module.exports = {
   },
   SET_DENOMINATION_ROUTE: {
     code: 59,
-    encrypted: false,
+    encrypted: true,
     args: true,
     device: ['SMART Hopper', 'SMART Payout', 'NV11'],
     description:

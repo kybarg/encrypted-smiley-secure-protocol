@@ -289,7 +289,7 @@ describe('parseData', () => {
 
       expect(result).toEqual({
         command: 'POLL_WITH_ACK',
-        info: {},
+        info: [],
         status: 'OK',
         success: true,
       })
@@ -2359,7 +2359,7 @@ describe('parseData', () => {
           unit_type: 'SMART payout fitted',
           firmware_version: '4.59',
           country_code: 'USD',
-          value_multiplier: 0,
+          value_multiplier: 1,
           protocol_version: 6,
         },
         status: 'OK',
@@ -2469,7 +2469,7 @@ describe('parseData', () => {
 
       expect(result).toEqual({
         command: 'POLL',
-        info: {},
+        info: [],
         status: 'OK',
         success: true,
       })
@@ -3258,7 +3258,7 @@ describe('parseData', () => {
             description:
               'The device has detected a discrepancy on power-up that the last payout request was interrupted (possibly due to a power failure). The amounts of the value paid and requested are given in the event data.',
             name: 'INCOMPLETE_PAYOUT',
-            dispensed: 1,
+            actual: 1,
             requested: 5,
           },
         ],
@@ -3285,12 +3285,12 @@ describe('parseData', () => {
             value: [
               {
                 country_code: 'USD',
-                dispensed: 1,
+                actual: 1,
                 requested: 5,
               },
               {
                 country_code: 'UAH',
-                dispensed: 2,
+                actual: 2,
                 requested: 7,
               },
             ],
@@ -3314,7 +3314,7 @@ describe('parseData', () => {
             description:
               'The device has detected a discrepancy on power-up that the last float request was interrupted (possibly due to a power failure). The amounts of the value paid and requested are given in the event data.',
             name: 'INCOMPLETE_FLOAT',
-            floated: 1,
+            actual: 1,
             requested: 5,
           },
         ],
@@ -3341,12 +3341,12 @@ describe('parseData', () => {
             value: [
               {
                 country_code: 'USD',
-                floated: 1,
+                actual: 1,
                 requested: 5,
               },
               {
                 country_code: 'UAH',
-                floated: 2,
+                actual: 2,
                 requested: 7,
               },
             ],
@@ -3994,7 +3994,30 @@ describe('parseData', () => {
   })
 
   describe('SETUP_REQUEST', () => {
-    test('OK: protocol < 6', () => {
+    test('OK: SMART Hopper', () => {
+      const data = [
+        0xf0, 0x03, 0x30, 0x31, 0x30, 0x30, 0x45, 0x55, 0x52, 0x06, 0x03, 0x01, 0x00, 0x02, 0x00, 0x05, 0x00, 0x45, 0x55, 0x52, 0x45, 0x55, 0x52,
+        0x45, 0x55, 0x52,
+      ]
+      const result = parseData(data, 'SETUP_REQUEST', 6, 'Smart Hopper')
+
+      expect(result).toEqual({
+        command: 'SETUP_REQUEST',
+        info: {
+          coin_values: [1, 2, 5],
+          country_code: 'EUR',
+          country_codes_for_values: ['EUR', 'EUR', 'EUR'],
+          firmware_version: '1.00',
+          number_of_coin_values: 3,
+          protocol_version: 6,
+          unit_type: 'Smart Hopper',
+        },
+        status: 'OK',
+        success: true,
+      })
+    })
+
+    test('OK: Banknote validator', () => {
       const data = [
         0xf0, 0x00, 0x30, 0x31, 0x30, 0x30, 0x45, 0x55, 0x52, 0x00, 0x00, 0x01, 0x03, 0x05, 0x0a, 0x14, 0x02, 0x02, 0x02, 0x00, 0x00, 0x64, 0x04,
       ]
@@ -4018,27 +4041,54 @@ describe('parseData', () => {
       })
     })
 
+    test('OK: protocol < 6', () => {
+      const data = [
+        0xf0, 0x06, 0x30, 0x34, 0x35, 0x39, 0x55, 0x53, 0x44, 0x00, 0x00, 0x01, 0x07, 0x01, 0x02, 0x05, 0x0a, 0x14, 0x32, 0x64, 0x02, 0x02, 0x02,
+        0x02, 0x02, 0x02, 0x02, 0x00, 0x00, 0x64, 0x04,
+      ]
+      const result = parseData(data, 'SETUP_REQUEST', 4, 'SMART payout fitted')
+
+      expect(result).toEqual({
+        command: 'SETUP_REQUEST',
+        info: {
+          channel_security: [2, 2, 2, 2, 2, 2, 2],
+          channel_value: [1, 2, 5, 10, 20, 50, 100],
+          country_code: 'USD',
+          firmware_version: '4.59',
+          number_of_channels: 7,
+          protocol_version: 4,
+          real_value_multiplier: 100,
+          unit_type: 'SMART payout fitted',
+          value_multiplier: 1,
+        },
+        status: 'OK',
+        success: true,
+      })
+    })
+
     test('OK: protocol >= 6', () => {
       const data = [
-        0xf0, 0x06, 0x30, 0x36, 0x30, 0x30, 0x45, 0x55, 0x52, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x07,
-        0x45, 0x55, 0x52, 0x45, 0x55, 0x52, 0x45, 0x55, 0x52, 0x05, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00,
+        0xf0, 0x06, 0x30, 0x34, 0x35, 0x39, 0x55, 0x53, 0x44, 0x00, 0x00, 0x01, 0x07, 0x01, 0x02, 0x05, 0x0a, 0x14, 0x32, 0x64, 0x02, 0x02, 0x02,
+        0x02, 0x02, 0x02, 0x02, 0x00, 0x00, 0x64, 0x06, 0x55, 0x53, 0x44, 0x55, 0x53, 0x44, 0x55, 0x53, 0x44, 0x55, 0x53, 0x44, 0x55, 0x53, 0x44,
+        0x55, 0x53, 0x44, 0x55, 0x53, 0x44, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x14,
+        0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00,
       ]
       const result = parseData(data, 'SETUP_REQUEST', 6, 'SMART payout fitted')
 
       expect(result).toEqual({
         command: 'SETUP_REQUEST',
         info: {
-          channel_security: [0, 0, 0],
-          channel_value: [0, 0, 0],
-          country_code: 'EUR',
-          expanded_channel_country_code: ['EUR', 'EUR', 'EUR'],
-          expanded_channel_value: [5, 10, 20],
-          firmware_version: '6.00',
-          number_of_channels: 3,
-          protocol_version: 7,
+          channel_security: [2, 2, 2, 2, 2, 2, 2],
+          channel_value: [1, 2, 5, 10, 20, 50, 100],
+          country_code: 'USD',
+          expanded_channel_country_code: ['USD', 'USD', 'USD', 'USD', 'USD', 'USD', 'USD'],
+          expanded_channel_value: [1, 2, 5, 10, 20, 50, 100],
+          firmware_version: '4.59',
+          number_of_channels: 7,
+          protocol_version: 6,
           real_value_multiplier: 100,
           unit_type: 'SMART payout fitted',
-          value_multiplier: 0,
+          value_multiplier: 1,
         },
         status: 'OK',
         success: true,

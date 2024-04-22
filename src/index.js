@@ -24,7 +24,7 @@ class SSP extends EventEmitter {
     this.debug = param.debug || false
     this.id = param.id || 0
     this.timeout = param.timeout || 3000
-    this.encryptAllCommand = param.encryptAllCommand || true
+    this.encryptAllCommand = param.encryptAllCommand !== undefined ? param.encryptAllCommand : true
     this.encryptKey = null
     this.keys = {
       fixedKey: param.fixedKey || '0123456701234567',

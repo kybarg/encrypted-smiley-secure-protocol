@@ -8,6 +8,7 @@ class SSPParser extends Transform {
 
     this.counter = 0
     this.checkStuff = 0
+    this.packetLength = 0
   }
 
   // this is converted from C++ SDK with edits:
@@ -23,7 +24,7 @@ class SSPParser extends Transform {
       } else if (byte == SSP_STX && this.counter == 1) {
         // reset if started from stuffed byte
         this.reset()
-      } else if (this.counter > 0) {
+      } else {
         // if last byte was start byte, and next is not then
         // restart the packet
         if (this.checkStuff == 1) {
@@ -43,10 +44,12 @@ class SSPParser extends Transform {
             // add data to packet
             this.buffer = Buffer.concat([this.buffer, Buffer.from([byte])])
             this.counter++
+
+            // get the packet length
+            if (this.counter === 3) this.packetLength = this.buffer[2] + 5
           }
         }
-        // are we at the end of the packet
-        if (this.buffer[2] && this.counter === this.buffer[2] + 5) {
+        if (this.packetLength === this.buffer.byteLength) {
           // reset packet
           this.push(this.buffer)
           this.reset()
@@ -60,6 +63,7 @@ class SSPParser extends Transform {
   reset() {
     this.counter = 0
     this.checkStuff = 0
+    this.packetLength = 0
     this.buffer = Buffer.alloc(0)
   }
 

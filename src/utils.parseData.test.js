@@ -202,6 +202,21 @@ describe('parseData', () => {
         success: false,
       })
     })
+
+    test('Device error', () => {
+      const data = [0xf5, 0xff]
+      const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
+
+      expect(result).toEqual({
+        command: 'ENABLE_PAYOUT_DEVICE',
+        info: {
+          error: 'Unknown error',
+          errorCode: 255,
+        },
+        status: 'COMMAND_CANNOT_BE_PROCESSED',
+        success: false,
+      })
+    })
   })
 
   describe('DISABLE_PAYOUT_DEVICE', () => {
@@ -901,6 +916,21 @@ describe('parseData', () => {
         success: false,
       })
     })
+
+    test('COMMAND_CANNOT_BE_PROCESSED: Unknown error', () => {
+      const data = [0xf5, 0xff]
+      const result = parseData(data, 'STACK_NOTE', 6, 'Note Float fitted')
+
+      expect(result).toEqual({
+        command: 'STACK_NOTE',
+        info: {
+          error: 'Unknown error',
+          errorCode: 255,
+        },
+        status: 'COMMAND_CANNOT_BE_PROCESSED',
+        success: false,
+      })
+    })
   })
 
   describe('PAYOUT_NOTE', () => {
@@ -978,8 +1008,61 @@ describe('parseData', () => {
   })
 
   describe('GET_NOTE_POSITIONS', () => {
-    test('TODO', () => {
-      expect(1).toBe(1)
+    test('OK: Report by value', () => {
+      const data = [0xf0, 0x02, 0xf4, 0x01, 0x00, 0x00, 0xe8, 0x03, 0x00, 0x00]
+      const result = parseData(data, 'GET_NOTE_POSITIONS', 6, 'Note Float fitted')
+
+      expect(result).toEqual({
+        command: 'GET_NOTE_POSITIONS',
+        info: {
+          slot: {
+            1: {
+              value: 500,
+            },
+            2: {
+              value: 1000,
+            },
+          },
+        },
+        status: 'OK',
+        success: true,
+      })
+    })
+
+    test('OK: Report by channel', () => {
+      const data = [0xf0, 0x02, 0x01, 0x02]
+      const result = parseData(data, 'GET_NOTE_POSITIONS', 6, 'Note Float fitted')
+
+      expect(result).toEqual({
+        command: 'GET_NOTE_POSITIONS',
+        info: {
+          slot: {
+            1: {
+              channel: 1,
+            },
+            2: {
+              channel: 2,
+            },
+          },
+        },
+        status: 'OK',
+        success: true,
+      })
+    })
+
+    test('ERROR', () => {
+      const data = [0xf5, 0x02]
+
+      const result = parseData(data, 'GET_NOTE_POSITIONS', 6, 'Note Float fitted')
+      expect(result).toEqual({
+        command: 'GET_NOTE_POSITIONS',
+        info: {
+          error: 'Invalid currency',
+          errorCode: 2,
+        },
+        status: 'COMMAND_CANNOT_BE_PROCESSED',
+        success: false,
+      })
     })
   })
 
@@ -1186,6 +1269,21 @@ describe('parseData', () => {
         info: {
           errorCode: 3,
           error: 'Payout device error',
+        },
+        status: 'COMMAND_CANNOT_BE_PROCESSED',
+        success: false,
+      })
+    })
+
+    test('COMMAND_CANNOT_BE_PROCESSED: Unknown error', () => {
+      const data = [0xf5, 0xff]
+      const result = parseData(data, 'GET_DENOMINATION_ROUTE', 6, 'SMART payout fitted')
+
+      expect(result).toEqual({
+        command: 'GET_DENOMINATION_ROUTE',
+        info: {
+          errorCode: 255,
+          error: 'Unknown error',
         },
         status: 'COMMAND_CANNOT_BE_PROCESSED',
         success: false,
@@ -3051,7 +3149,31 @@ describe('parseData', () => {
         success: true,
       })
     })
-    // TODO: test NV11
+
+    test('JAMMED: NV11 protocol >= 6', () => {
+      const data = [0xf0, 0xd5, 0x01, 0xe6, 0x00, 0x00, 0x00, 0x45, 0x55, 0x52]
+      const result = parseData(data, 'POLL', 6, 'Note Float fitted')
+
+      expect(result).toEqual({
+        command: 'POLL',
+        info: [
+          {
+            code: 213,
+            description:
+              'The device has detected that coins are jammed in its mechanism and cannot be removed other than by manual intervention. The value paid at the jam point is given in the event data.',
+            name: 'JAMMED',
+            value: [
+              {
+                country_code: 'EUR',
+                value: 230,
+              },
+            ],
+          },
+        ],
+        status: 'OK',
+        success: true,
+      })
+    })
 
     test('HALTED: protocol < 6', () => {
       const data = [0xf0, 0xd6, 0x01, 0x00, 0x00, 0x00]
@@ -3906,6 +4028,25 @@ describe('parseData', () => {
             description:
               'This event is reported when the Note Float has reached its limit of stored notes. This event will be reported until a note is paid out or stacked.',
             name: 'DEVICE_FULL',
+          },
+        ],
+        status: 'OK',
+        success: true,
+      })
+    })
+
+    test('Skip unknown status', () => {
+      const data = [0xf0, 0x00, 0x00, 0x00, 0xb6, 0x00]
+      const result = parseData(data, 'POLL', 6, 'SMART payout fitted')
+
+      expect(result).toEqual({
+        command: 'POLL',
+        info: [
+          {
+            code: 182,
+            description:
+              'This event is given only when using the Poll with ACK command. It is given when the BNV is powered up and setting its sensors and mechanisms to be ready for Note acceptance. When the event response does not contain this event, the BNV is ready to be enabled and used.',
+            name: 'INITIALISING',
           },
         ],
         status: 'OK',

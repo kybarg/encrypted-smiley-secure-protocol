@@ -3,33 +3,67 @@ const statusDesc = require('./status_desc.js')
 const unitType = require('./unit_type.js')
 const rejectNote = require('./reject_note.js')
 
+/**
+ * Returns the absolute value of a BigInt.
+ *
+ * @param {BigInt} n - The BigInt for which to calculate the absolute value.
+ * @returns {BigInt} - The absolute value of the input BigInt.
+ */
 const absBigInt = n => (n < 0n ? -n : n)
 
 /**
- * Encrypt
+ * Encrypts data using AES encryption with ECB mode.
  *
- * @param {Buffer} key
- * @param {Buffer} data
- * @returns
+ * @param {Buffer} key - The key for encryption.
+ * @param {Buffer} data - The data to be encrypted.
+ * @returns {Buffer} - The encrypted data.
+ * @throws {Error} - Throws an error if key or data is not provided.
  */
 function encrypt(key, data) {
+  if (!key || !Buffer.isBuffer(key)) {
+    throw new Error('Key must be a Buffer')
+  }
+
+  if (!data || !Buffer.isBuffer(data)) {
+    throw new Error('Data must be a Buffer')
+  }
+
+  // Create cipher using ECB mode (Electronic Codebook)
   const cipher = createCipheriv('aes-128-ecb', key, null)
+
+  // Enable automatic padding
   cipher.setAutoPadding(false)
+
+  // Encrypt the data
   const encryptedData = Buffer.concat([cipher.update(data), cipher.final()])
 
   return encryptedData
 }
 
 /**
- *  Decrypt
+ * Decrypts data using AES decryption with ECB mode.
  *
- * @param {Buffer} key
- * @param {Buffer} data
- * @returns
+ * @param {Buffer} key - The key for decryption.
+ * @param {Buffer} data - The data to be decrypted.
+ * @returns {Buffer} - The decrypted data.
+ * @throws {Error} - Throws an error if key or data is not provided.
  */
 function decrypt(key, data) {
+  if (!key || !Buffer.isBuffer(key)) {
+    throw new Error('Key must be a Buffer')
+  }
+
+  if (!data || !Buffer.isBuffer(data)) {
+    throw new Error('Data must be a Buffer')
+  }
+
+  // Create decipher using ECB mode (Electronic Codebook)
   const decipher = createDecipheriv('aes-128-ecb', key, null)
+
+  // Enable automatic padding
   decipher.setAutoPadding(false)
+
+  // Decrypt the data
   const decryptedData = Buffer.concat([decipher.update(data), decipher.final()])
 
   return decryptedData
@@ -46,7 +80,7 @@ function decrypt(key, data) {
  *                   or if the length exceeds the buffer size.
  */
 function readBytesFromBuffer(buffer, startIndex, length) {
-  if (!(buffer instanceof Buffer)) {
+  if (!buffer || !Buffer.isBuffer(buffer)) {
     throw new Error('Input must be a Buffer object')
   }
 
@@ -87,14 +121,6 @@ function CRC16(source) {
   return [crc & 0xff, (crc >> 8) & 0xff]
 }
 
-function randHexArray(length = 0) {
-  const array = []
-  for (let i = 1; i <= length; i++) {
-    array.push(randomInt(0, 255))
-  }
-  return array
-}
-
 function int64LE(number) {
   const buffer = Buffer.alloc(8)
   buffer.writeBigInt64LE(BigInt(number))
@@ -113,7 +139,17 @@ function int16LE(number) {
   return buffer
 }
 
+/**
+ * Creates a Buffer representing the given unsigned 16-bit integer in little-endian format.
+ *
+ * @param {number} number - The unsigned 16-bit integer.
+ * @returns {Buffer} - Buffer representing the unsigned 16-bit integer in little-endian format.
+ */
 function uInt16LE(number) {
+  if (!Number.isInteger(number) || number < 0 || number > 65535) {
+    throw new Error('Input must be an unsigned 16-bit integer')
+  }
+
   const buffer = Buffer.alloc(2)
   buffer.writeUInt16LE(number)
   return buffer
@@ -186,8 +222,14 @@ function argsToByte(command, args, protocolVersion) {
       return [enable[args.enable || 'none'], 0x01, number]
     } else if (command === 'SET_BAR_CODE_INHIBIT_STATUS') {
       let byte = 0xff
-      byte -= args.currencyRead ? 1 : 0
-      byte -= args.barCode ? 2 : 0
+
+      if (!args.currencyRead) {
+        byte &= 0xfe
+      }
+
+      if (!args.barCode) {
+        byte &= 0xfd
+      }
 
       return [byte]
     } else if (command === 'PAYOUT_AMOUNT') {
@@ -211,9 +253,9 @@ function argsToByte(command, args, protocolVersion) {
       return [...int16LE(args.min_possible_payout)].concat([...int32LE(args.amount)])
     } else if (command === 'SET_COIN_MECH_INHIBITS') {
       if (protocolVersion >= 6) {
-        return [args.inhibited ? 0x00 : 0x01].concat([...int32LE(args.amount)], [...Buffer.from(args.country_code, 'ascii')])
+        return [args.inhibited ? 0x00 : 0x01].concat([...int16LE(args.amount)], [...Buffer.from(args.country_code, 'ascii')])
       }
-      return [args.inhibited ? 0x00 : 0x01].concat([...int32LE(args.amount)])
+      return [args.inhibited ? 0x00 : 0x01].concat([...int16LE(args.amount)])
     } else if (command === 'FLOAT_BY_DENOMINATION' || command === 'PAYOUT_BY_DENOMINATION') {
       let tmpArray = [args.value.length]
 
@@ -247,7 +289,7 @@ function argsToByte(command, args, protocolVersion) {
       byte += args.NO_HOLD_NOTE_ON_PAYOUT || args.OPTIMISE_FOR_PAYIN_SPEED ? 2 : 0
       return [byte]
     } else if (command === 'SET_FIXED_ENCRYPTION_KEY') {
-      return int64LE(args.fixedKey)
+      return Buffer.from(args.fixedKey, 'hex').swap64()
     } else if (command === 'COIN_MECH_OPTIONS') {
       return [args.ccTalk ? 1 : 0]
     }
@@ -415,9 +457,8 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
           result.info.slot[i + 1] = { channel: data[i] }
         }
       } else {
-        const tmp = Buffer.from(data).toString().match(/.{4}/g)
         for (let i = 0; i < count; i++) {
-          result.info.slot[i + 1] = { value: tmp[i] }
+          result.info.slot[i + 1] = { value: data.readUInt32LE(i * 4) }
         }
       }
     } else if (currentCommand === 'GET_BUILD_REVISION') {
@@ -449,10 +490,10 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
       while (k < data.length) {
         const code = data[k]
 
-        if (!statusDesc[code]) {
-          k += 1
-          continue
-        }
+        // if (!statusDesc[code]) {
+        //   k += 1
+        //   continue
+        // }
 
         const info = {
           code,
@@ -613,7 +654,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
 
           default:
             k += 1
-            break
+            continue
         }
 
         result.info.push(info)
@@ -752,9 +793,10 @@ module.exports = {
   parseData,
   randomInt,
   CRC16,
-  randHexArray,
+  readBytesFromBuffer,
   argsToByte,
   int64LE,
   int32LE,
   int16LE,
+  uInt16LE,
 }

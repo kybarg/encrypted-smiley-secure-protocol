@@ -59,21 +59,15 @@ describe('SSPParser', () => {
     expect(spy).toHaveBeenCalledWith(Buffer.from([127, 0, 2, 127, 240, 32, 10]))
   })
 
-  test('_flush method should push buffer and reset', done => {
+  test('_flush method should push buffer and reset', () => {
     const buffer = Buffer.from([127, 0, 1, 127, 127, 32, 10])
     parser.buffer = buffer
 
     const pushSpy = jest.spyOn(parser, 'push')
     const resetSpy = jest.spyOn(parser, 'reset')
 
-    parser._flush(() => {
-      expect(pushSpy).toHaveBeenCalledWith(buffer)
-      expect(resetSpy).toHaveBeenCalled()
-      done()
-    })
-  })
-
-  test('_flush callback should be called', done => {
-    parser._flush(done)
+    parser.end()
+    expect(pushSpy).toHaveBeenCalledWith(buffer)
+    expect(resetSpy).toHaveBeenCalled()
   })
 })

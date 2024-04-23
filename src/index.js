@@ -3,7 +3,7 @@ const { once, EventEmitter } = require('node:events')
 const { satisfies } = require('semver')
 const { SerialPort } = require('serialport')
 const chalk = require('chalk')
-const { parseData, CRC16, randHexArray, argsToByte, int64LE, encrypt, decrypt, absBigInt } = require('./utils.js')
+const { parseData, CRC16, argsToByte, int64LE, encrypt, decrypt, absBigInt } = require('./utils.js')
 const commandList = require('./command.js')
 const { SSPParser } = require('./parser/index.js')
 const { engines } = require('../package.json')
@@ -144,7 +144,7 @@ class SSP extends EventEmitter {
        * Random data to make the length of the length +count + data + packing + CRCL + CRCH to be a multiple of 16 bytes
        * 7 = DATA.length (1 byte) + eCOUNT (4 bytes) + eCRCL (1 byte) + eCRCH (1 byte)
        */
-      const ePACKING = randHexArray(Math.ceil((DATA.length + 7) / 16) * 16 - (DATA.length + 7))
+      const ePACKING = randomBytes(Math.ceil((DATA.length + 7) / 16) * 16 - (DATA.length + 7))
 
       // data to calculate CRC on
       const crcPacket = [DATA.length, ...eCOUNT, ...DATA, ...ePACKING]

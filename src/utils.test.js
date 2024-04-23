@@ -1,12 +1,12 @@
 const { argsToByte, absBigInt, encrypt, decrypt, randomInt, CRC16, readBytesFromBuffer, int64LE, int32LE, int16LE, uInt16LE } = require('./utils')
 
 describe('absBigInt', () => {
-  test('should return 1', () => {
+  test('should return 1 for -1', () => {
     const num = BigInt(-1)
     expect(absBigInt(num)).toBe(BigInt(1))
   })
 
-  test('should return 1', () => {
+  test('should return 1 for 1', () => {
     const num = BigInt(1)
     expect(absBigInt(num)).toBe(BigInt(1))
   })

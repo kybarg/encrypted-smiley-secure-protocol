@@ -203,7 +203,7 @@ describe('parseData', () => {
       })
     })
 
-    test('Device error', () => {
+    test('Unknown error', () => {
       const data = [0xf5, 0xff]
       const result = parseData(data, 'ENABLE_PAYOUT_DEVICE', 6, 'SMART payout fitted')
 

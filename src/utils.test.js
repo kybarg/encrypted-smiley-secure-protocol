@@ -225,6 +225,11 @@ describe('argsToByte function', () => {
     expect(result).toEqual(Buffer.from([0x01, 0x0a, 0x00, 0x00, 0x00]))
   })
 
+  test('SET_DENOMINATION_ROUTE: protocol < 6, hopper', () => {
+    const result = argsToByte('SET_DENOMINATION_ROUTE', { route: 'cashbox', value: 10, isHopper: true }, 5)
+    expect(result).toEqual(Buffer.from([0x01, 0x0a, 0x00]))
+  })
+
   test('SET_DENOMINATION_ROUTE: protocol >= 6', () => {
     const result = argsToByte('SET_DENOMINATION_ROUTE', { route: 'payout', value: 10, country_code: 'EUR' }, 6)
     expect(result).toEqual(Buffer.from([0x00, 0x0a, 0x00, 0x00, 0x00, 0x45, 0x55, 0x52]))
@@ -235,14 +240,24 @@ describe('argsToByte function', () => {
     expect(result).toEqual(Buffer.from([0x07, 0x00]))
   })
 
-  test('SET_COIN_MECH_GLOBAL_INHIBIT', () => {
+  test('SET_COIN_MECH_GLOBAL_INHIBIT: enable', () => {
     const result = argsToByte('SET_COIN_MECH_GLOBAL_INHIBIT', { enable: true }, 6)
     expect(result).toEqual(Buffer.from([0x01]))
   })
 
-  test('SET_HOPPER_OPTIONS', () => {
-    const result = argsToByte('SET_HOPPER_OPTIONS', { payMode: 0, levelCheck: false, motorSpeed: 1, cashBoxPayAcive: false }, 6)
+  test('SET_COIN_MECH_GLOBAL_INHIBIT: disable', () => {
+    const result = argsToByte('SET_COIN_MECH_GLOBAL_INHIBIT', { enable: false }, 6)
+    expect(result).toEqual(Buffer.from([0x00]))
+  })
+
+  test('SET_HOPPER_OPTIONS: 1', () => {
+    const result = argsToByte('SET_HOPPER_OPTIONS', { payMode: 0, levelCheck: false, motorSpeed: 1, cashBoxPayActive: false }, 6)
     expect(result).toEqual(Buffer.from([0x04, 0x00]))
+  })
+
+  test('SET_HOPPER_OPTIONS: 2', () => {
+    const result = argsToByte('SET_HOPPER_OPTIONS', { payMode: 1, levelCheck: true, motorSpeed: 0, cashBoxPayActive: true }, 6)
+    expect(result).toEqual(Buffer.from([0x0B, 0x00]))
   })
 
   test('GET_DENOMINATION_ROUTE: protocol < 6', () => {
@@ -296,13 +311,18 @@ describe('argsToByte function', () => {
   })
 
   test('SET_BAR_CODE_CONFIGURATION: bound low', () => {
-    const result = argsToByte('SET_BAR_CODE_CONFIGURATION', { enable: 'both', numChar: 5 }, 6)
-    expect(result).toEqual(Buffer.from([0x03, 0x01, 0x06]))
+    const result = argsToByte('SET_BAR_CODE_CONFIGURATION', { enable: 'top', numChar: 5 }, 6)
+    expect(result).toEqual(Buffer.from([0x01, 0x01, 0x06]))
   })
 
   test('SET_BAR_CODE_CONFIGURATION: bound up', () => {
-    const result = argsToByte('SET_BAR_CODE_CONFIGURATION', { enable: 'both', numChar: 30 }, 6)
-    expect(result).toEqual(Buffer.from([0x03, 0x01, 0x18]))
+    const result = argsToByte('SET_BAR_CODE_CONFIGURATION', { enable: 'bottom', numChar: 30 }, 6)
+    expect(result).toEqual(Buffer.from([0x02, 0x01, 0x18]))
+  })
+
+  test('SET_BAR_CODE_CONFIGURATION: none', () => {
+    const result = argsToByte('SET_BAR_CODE_CONFIGURATION', {}, 6)
+    expect(result).toEqual(Buffer.from([0x00, 0x01, 0x06]))
   })
 
   test('SET_BAR_CODE_INHIBIT_STATUS', () => {
@@ -433,9 +453,14 @@ describe('argsToByte function', () => {
     )
   })
 
-  test('SET_VALUE_REPORTING_TYPE', () => {
+  test('SET_VALUE_REPORTING_TYPE: channel', () => {
     const result = argsToByte('SET_VALUE_REPORTING_TYPE', { reportBy: 'channel' }, 6)
     expect(result).toEqual(Buffer.from([0x01]))
+  })
+
+  test('SET_VALUE_REPORTING_TYPE: value', () => {
+    const result = argsToByte('SET_VALUE_REPORTING_TYPE', { reportBy: 'value' }, 6)
+    expect(result).toEqual(Buffer.from([0x00]))
   })
 
   test('SET_BAUD_RATE: 9600', () => {
@@ -453,14 +478,24 @@ describe('argsToByte function', () => {
     expect(result).toEqual(Buffer.from([0x02, 0x01]))
   })
 
-  test('CONFIGURE_BEZEL', () => {
+  test('CONFIGURE_BEZEL: non volatile', () => {
     const result = argsToByte('CONFIGURE_BEZEL', { RGB: 'FF0000', volatile: false }, 6)
     expect(result).toEqual(Buffer.from([0xff, 0x00, 0x00, 0x01]))
   })
 
-  test('ENABLE_PAYOUT_DEVICE', () => {
-    const result = argsToByte('ENABLE_PAYOUT_DEVICE', { GIVE_VALUE_ON_STORED: true, OPTIMISE_FOR_PAYIN_SPEED: true }, 6)
+  test('CONFIGURE_BEZEL: volatile', () => {
+    const result = argsToByte('CONFIGURE_BEZEL', { RGB: 'FF0000', volatile: true }, 6)
+    expect(result).toEqual(Buffer.from([0xff, 0x00, 0x00, 0x00]))
+  })
+
+  test('ENABLE_PAYOUT_DEVICE: nv11', () => {
+    const result = argsToByte('ENABLE_PAYOUT_DEVICE', { GIVE_VALUE_ON_STORED: true, NO_HOLD_NOTE_ON_PAYOUT: true }, 6)
     expect(result).toEqual(Buffer.from([0x03]))
+  })
+
+  test('ENABLE_PAYOUT_DEVICE: SMART Payout', () => {
+    const result = argsToByte('ENABLE_PAYOUT_DEVICE', { REQUIRE_FULL_STARTUP: false, OPTIMISE_FOR_PAYIN_SPEED: false }, 6)
+    expect(result).toEqual(Buffer.from([0x00]))
   })
 
   test('SET_FIXED_ENCRYPTION_KEY', () => {
@@ -469,6 +504,11 @@ describe('argsToByte function', () => {
   })
 
   test('COIN_MECH_OPTIONS', () => {
+    const result = argsToByte('COIN_MECH_OPTIONS', { ccTalk: false }, 6)
+    expect(result).toEqual(Buffer.from([0x00]))
+  })
+
+  test('COIN_MECH_OPTIONS: ccTalk', () => {
     const result = argsToByte('COIN_MECH_OPTIONS', { ccTalk: true }, 6)
     expect(result).toEqual(Buffer.from([0x01]))
   })

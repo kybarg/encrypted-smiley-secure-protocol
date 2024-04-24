@@ -14,6 +14,18 @@ describe('parseData', () => {
       })
     })
 
+    test('UNDEFINED STATUS', () => {
+      const data = [0xff]
+      const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
+
+      expect(result).toEqual({
+        command: 'SYNC',
+        info: {},
+        status: 'UNDEFINED',
+        success: false,
+      })
+    })
+
     test('COMMAND_NOT_KNOWN', () => {
       const data = [0xf2]
       const result = parseData(data, 'SYNC', 6, 'SMART payout fitted')
@@ -415,24 +427,10 @@ describe('parseData', () => {
         command: 'GET_HOPPER_OPTIONS',
         info: {
           cashBoxPayAcive: false,
-          levelCheck: true,
+          levelCheck: false,
           motorSpeed: true,
-          payMode: true,
+          payMode: false,
         },
-        status: 'OK',
-        success: true,
-      })
-    })
-  })
-
-  describe('SET_HOPPER_OPTIONS', () => {
-    test('OK', () => {
-      const data = [0xf0]
-      const result = parseData(data, 'SET_HOPPER_OPTIONS', 6, 'Smart Hopper')
-
-      expect(result).toEqual({
-        command: 'SET_HOPPER_OPTIONS',
-        info: {},
         status: 'OK',
         success: true,
       })
@@ -1050,7 +1048,21 @@ describe('parseData', () => {
       })
     })
 
-    test('ERROR', () => {
+    test('ERROR: 1', () => {
+      const data = [0xf5, 0x01]
+
+      const result = parseData(data, 'GET_NOTE_POSITIONS', 6, 'Note Float fitted')
+      expect(result).toEqual({
+        command: 'GET_NOTE_POSITIONS',
+        info: {
+          errorCode: 1,
+        },
+        status: 'COMMAND_CANNOT_BE_PROCESSED',
+        success: false,
+      })
+    })
+
+    test('ERROR: 2', () => {
       const data = [0xf5, 0x02]
 
       const result = parseData(data, 'GET_NOTE_POSITIONS', 6, 'Note Float fitted')
@@ -3914,6 +3926,24 @@ describe('parseData', () => {
       })
     })
 
+    test('NOTE_PAID_INTO_STORE_AT_POWER-UP: protocol < 8', () => {
+      const data = [0xf0, 0xcb, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
+      const result = parseData(data, 'POLL', 7, 'SMART payout fitted')
+
+      expect(result).toEqual({
+        command: 'POLL',
+        info: [
+          {
+            code: 203,
+            description: 'Reported when a note has been detected as paid into the payout store as part of the power-up procedure.',
+            name: 'NOTE_PAID_INTO_STORE_AT_POWER-UP',
+          },
+        ],
+        status: 'OK',
+        success: true,
+      })
+    })
+
     test('NOTE_PAID_INTO_STORE_AT_POWER-UP: protocol >=8', () => {
       const data = [0xf0, 0xcb, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
       const result = parseData(data, 'POLL', 8, 'SMART payout fitted')
@@ -3958,9 +3988,27 @@ describe('parseData', () => {
       })
     })
 
-    test('NOTE_DISPENSED_AT_POWER-UP: protocol >=8', () => {
+    test('NOTE_DISPENSED_AT_POWER-UP: protocol < 6', () => {
       const data = [0xf0, 0xcd, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
-      const result = parseData(data, 'POLL', 8, 'SMART payout fitted')
+      const result = parseData(data, 'POLL', 4, 'Note Float fitted')
+
+      expect(result).toEqual({
+        command: 'POLL',
+        info: [
+          {
+            code: 205,
+            description: 'Reported when a note has been dispensed as part of the power-up procedure.',
+            name: 'NOTE_DISPENSED_AT_POWER-UP',
+          },
+        ],
+        status: 'OK',
+        success: true,
+      })
+    })
+
+    test('NOTE_DISPENSED_AT_POWER-UP: protocol >=6', () => {
+      const data = [0xf0, 0xcd, 0x01, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44]
+      const result = parseData(data, 'POLL', 6, 'Note Float fitted')
 
       expect(result).toEqual({
         command: 'POLL',
@@ -4135,7 +4183,26 @@ describe('parseData', () => {
   })
 
   describe('SETUP_REQUEST', () => {
-    test('OK: SMART Hopper', () => {
+    test('OK: SMART Hopper, protocol < 6', () => {
+      const data = [0xf0, 0x03, 0x30, 0x31, 0x30, 0x30, 0x45, 0x55, 0x52, 0x05, 0x03, 0x01, 0x00, 0x02, 0x00, 0x05, 0x00]
+      const result = parseData(data, 'SETUP_REQUEST', 5, 'Smart Hopper')
+
+      expect(result).toEqual({
+        command: 'SETUP_REQUEST',
+        info: {
+          coin_values: [1, 2, 5],
+          country_code: 'EUR',
+          firmware_version: '1.00',
+          number_of_coin_values: 3,
+          protocol_version: 5,
+          unit_type: 'Smart Hopper',
+        },
+        status: 'OK',
+        success: true,
+      })
+    })
+
+    test('OK: SMART Hopper, protocol >= 6', () => {
       const data = [
         0xf0, 0x03, 0x30, 0x31, 0x30, 0x30, 0x45, 0x55, 0x52, 0x06, 0x03, 0x01, 0x00, 0x02, 0x00, 0x05, 0x00, 0x45, 0x55, 0x52, 0x45, 0x55, 0x52,
         0x45, 0x55, 0x52,

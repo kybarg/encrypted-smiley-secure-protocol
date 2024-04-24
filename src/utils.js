@@ -155,6 +155,13 @@ function uInt16LE(number) {
   return buffer
 }
 
+/**
+ * Creates a Buffer from given arguments.
+ *
+ * @param {string} command - Comand name.
+ * @param {object} args - Object containing requried arguments.
+ * @returns {Buffer} - Buffer of converted argumants.
+ */
 function argsToByte(command, args, protocolVersion) {
   if (args !== undefined) {
     switch (command) {
@@ -162,11 +169,18 @@ function argsToByte(command, args, protocolVersion) {
       case 'SET_MODULUS':
       case 'REQUEST_KEY_EXCHANGE':
         return int64LE(args.key)
-      case 'SET_DENOMINATION_ROUTE':
+      case 'SET_DENOMINATION_ROUTE': {
+        const routeBuffer = Buffer.from([args.route === 'payout' ? 0 : 1])
+        const valueBuffer32 = int32LE(args.value)
+
         if (protocolVersion >= 6) {
-          return Buffer.concat([Buffer.from([args.route === 'payout' ? 0 : 1]), int32LE(args.value), Buffer.from(args.country_code, 'ascii')])
+          const countryCodeBuffer = Buffer.from(args.country_code, 'ascii')
+          return Buffer.concat([routeBuffer, valueBuffer32, countryCodeBuffer])
         }
-        return Buffer.concat([Buffer.from([args.route === 'payout' ? 0 : 1]), args.isHopper ? int16LE(args.value) : int32LE(args.value)])
+
+        const valueHopperBuffer = args.isHopper ? int16LE(args.value) : valueBuffer32
+        return Buffer.concat([routeBuffer, valueHopperBuffer])
+      }
       case 'SET_CHANNEL_INHIBITS':
         return uInt16LE(args.channels.reduce((acc, index) => acc | (1 << (index - 1)), 0x0000))
       case 'SET_COIN_MECH_GLOBAL_INHIBIT':
@@ -179,17 +193,27 @@ function argsToByte(command, args, protocolVersion) {
         if (args.cashBoxPayActive) res += 8
         return int16LE(res)
       }
-      case 'GET_DENOMINATION_ROUTE':
+      case 'GET_DENOMINATION_ROUTE': {
+        const valueBuffer32 = int32LE(args.value)
         if (protocolVersion >= 6) {
-          return Buffer.concat([int32LE(args.value), Buffer.from(args.country_code, 'ascii')])
+          const countryCodeBuffer = Buffer.from(args.country_code, 'ascii')
+          return Buffer.concat([valueBuffer32, countryCodeBuffer])
         }
-        return args.isHopper ? int16LE(args.value) : int32LE(args.value)
-      case 'SET_DENOMINATION_LEVEL':
+        return args.isHopper ? int16LE(args.value) : valueBuffer32
+      }
+      case 'SET_DENOMINATION_LEVEL': {
+        const valueBuffer = int16LE(args.value)
+
         if (protocolVersion >= 6) {
-          return Buffer.concat([int16LE(args.value), int32LE(args.denomination), Buffer.from(args.country_code, 'ascii')])
+          const countryCodeBuffer = Buffer.from(args.country_code, 'ascii')
+          const denominationBuffer32 = int32LE(args.denomination)
+          return Buffer.concat([valueBuffer, denominationBuffer32, countryCodeBuffer])
         }
-        return Buffer.concat([int16LE(args.value), int16LE(args.denomination)])
-      case 'SET_REFILL_MODE':
+
+        const denominationBuffer = int16LE(args.denomination)
+        return Buffer.concat([valueBuffer, denominationBuffer])
+      }
+      case 'SET_REFILL_MODE': {
         let result = Buffer.alloc(0)
         switch (args.mode) {
           case 'on':
@@ -203,58 +227,84 @@ function argsToByte(command, args, protocolVersion) {
             break
         }
         return result
+      }
       case 'HOST_PROTOCOL_VERSION':
         return Buffer.from([args.version])
-      case 'SET_BAR_CODE_CONFIGURATION':
+      case 'SET_BAR_CODE_CONFIGURATION': {
         const enable = { none: 0, top: 1, bottom: 2, both: 3 }
-        let number = Math.min(Math.max(args.numChar || 6, 6), 24)
+        const number = Math.min(Math.max(args.numChar || 6, 6), 24)
         return Buffer.from([enable[args.enable || 'none'], 0x01, number])
+      }
       case 'SET_BAR_CODE_INHIBIT_STATUS': {
         let byte = 0xff
         if (!args.currencyRead) byte &= 0xfe
         if (!args.barCode) byte &= 0xfd
         return Buffer.from([byte])
       }
-      case 'PAYOUT_AMOUNT':
+      case 'PAYOUT_AMOUNT': {
+        const amountBuffer = int32LE(args.amount)
+
         if (protocolVersion >= 6) {
-          return Buffer.concat([int32LE(args.amount), Buffer.from(args.country_code, 'ascii'), Buffer.from([args.test ? 0x19 : 0x58])])
+          const countryCodeBuffer = Buffer.from(args.country_code, 'ascii')
+          const testBuffer = Buffer.from([args.test ? 0x19 : 0x58])
+          return Buffer.concat([amountBuffer, countryCodeBuffer, testBuffer])
         }
-        return int32LE(args.amount)
-      case 'GET_DENOMINATION_LEVEL':
+
+        return amountBuffer
+      }
+      case 'GET_DENOMINATION_LEVEL': {
+        const amountBuffer = int32LE(args.amount)
+
         if (protocolVersion >= 6) {
-          return Buffer.concat([int32LE(args.amount), Buffer.from(args.country_code, 'ascii')])
+          const countryCodeBuffer = Buffer.from(args.country_code, 'ascii')
+          return Buffer.concat([amountBuffer, countryCodeBuffer])
         }
-        return int32LE(args.amount)
+
+        return amountBuffer
+      }
       case 'FLOAT_AMOUNT': {
-        const bufferArray = [int16LE(args.min_possible_payout), int32LE(args.amount)]
+        const minBuffer = int16LE(args.min_possible_payout)
+        const amountBuffer = int32LE(args.amount)
 
         if (protocolVersion >= 6) {
-          bufferArray.push(Buffer.from(args.country_code, 'ascii'), Buffer.from([args.test ? 0x19 : 0x58]))
+          const countryCodeBuffer = Buffer.from(args.country_code, 'ascii')
+          const testBuffer = Buffer.from([args.test ? 0x19 : 0x58])
+          return Buffer.concat([minBuffer, amountBuffer, countryCodeBuffer, testBuffer])
         }
 
-        return Buffer.concat(bufferArray)
+        return Buffer.concat([minBuffer, amountBuffer])
       }
       case 'SET_COIN_MECH_INHIBITS': {
-        let buffer = Buffer.concat([Buffer.from([args.inhibited ? 0x00 : 0x01]), int16LE(args.amount)])
+        const inhibitBuffer = Buffer.from([args.inhibited ? 0x00 : 0x01])
+        const amountBuffer = int16LE(args.amount)
 
         if (protocolVersion >= 6) {
-          buffer = Buffer.concat([buffer, Buffer.from(args.country_code, 'ascii')])
+          const countryCodeBuffer = Buffer.from(args.country_code, 'ascii')
+          return Buffer.concat([inhibitBuffer, amountBuffer, countryCodeBuffer])
         }
 
-        return buffer
+        return Buffer.concat([inhibitBuffer, amountBuffer])
       }
       case 'FLOAT_BY_DENOMINATION':
-      case 'PAYOUT_BY_DENOMINATION':
-        let tmpBufferArray = [Buffer.from([args.value.length])]
+      case 'PAYOUT_BY_DENOMINATION': {
+        const tmpBufferArray = [Buffer.from([args.value.length])]
+        const testBuffer = Buffer.from([args.test ? 0x19 : 0x58])
+
         for (let i = 0; i < args.value.length; i++) {
-          tmpBufferArray.push(int16LE(args.value[i].number), int32LE(args.value[i].denomination), Buffer.from(args.value[i].country_code, 'ascii'))
+          const countBuffer = int16LE(args.value[i].number)
+          const denominationBuffer = int32LE(args.value[i].denomination)
+          const countryCodeBuffer = Buffer.from(args.value[i].country_code, 'ascii')
+          tmpBufferArray.push(countBuffer, denominationBuffer, countryCodeBuffer)
         }
-        tmpBufferArray.push(Buffer.from([args.test ? 0x19 : 0x58]))
+
+        tmpBufferArray.push(testBuffer)
+
         return Buffer.concat(tmpBufferArray)
+      }
       case 'SET_VALUE_REPORTING_TYPE':
         return Buffer.from([args.reportBy === 'channel' ? 0x01 : 0x00])
-      case 'SET_BAUD_RATE':
-        let byte = 0
+      case 'SET_BAUD_RATE': {
+        let byte = 9600
         switch (args.baudrate) {
           case 9600:
             byte = 0
@@ -267,6 +317,7 @@ function argsToByte(command, args, protocolVersion) {
             break
         }
         return Buffer.from([byte, args.reset_to_default_on_reset ? 0 : 1])
+      }
       case 'CONFIGURE_BEZEL':
         return Buffer.concat([Buffer.from(args.RGB, 'hex'), Buffer.from([args.volatile ? 0 : 1])])
       case 'ENABLE_PAYOUT_DEVICE': {
@@ -464,11 +515,14 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
       result.info.transferred_from_store_to_stacker = Buffer.from(data.slice(13, 17)).readInt32LE()
       result.info.rejected = Buffer.from(data.slice(17, 21)).readInt32LE()
     } else if (currentCommand === 'GET_HOPPER_OPTIONS') {
-      const tmp = Buffer.from(data.slice(0, 2)).readInt16LE().toString(2).split('').reverse()
-      result.info.payMode = tmp[0] === 0 || tmp[0] === undefined ? false : true
-      result.info.levelCheck = tmp[1] === 0 || tmp[1] === undefined ? false : true
-      result.info.motorSpeed = tmp[2] === 0 || tmp[2] === undefined ? false : true
-      result.info.cashBoxPayAcive = tmp[3] === 0 || tmp[3] === undefined ? false : true
+      const value = data.readUInt16LE(0)
+
+      Object.assign(result.info, {
+        payMode: (value & 0x01) !== 0,
+        levelCheck: (value & 0x02) !== 0,
+        motorSpeed: (value & 0x04) !== 0,
+        cashBoxPayAcive: (value & 0x08) !== 0,
+      })
     } else if (currentCommand === 'POLL' || currentCommand === 'POLL_WITH_ACK') {
       data = Buffer.from(data)
       result.info = []
@@ -477,10 +531,10 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
       while (k < data.length) {
         const code = data[k]
 
-        // if (!statusDesc[code]) {
-        //   k += 1
-        //   continue
-        // }
+        if (!statusDesc[code]) {
+          k += 1
+          continue
+        }
 
         const info = {
           code,
@@ -615,7 +669,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
           }
 
           case 'NOTE_TRANSFERED_TO_STACKER':
-          case 'NOTE_DISPENSED_AT_POWER-UP':
+          case 'NOTE_DISPENSED_AT_POWER-UP': {
             if (protocolVersion >= 6) {
               info.value = {
                 value: data.readUInt32LE(k + 1),
@@ -623,8 +677,11 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
               }
 
               k += 8
+            } else {
+              k += 1
             }
             break
+          }
 
           case 'NOTE_HELD_IN_BEZEL':
           case 'NOTE_PAID_INTO_STACKER_AT_POWER-UP':
@@ -636,12 +693,10 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
               }
 
               k += 8
+            } else {
+              k += 1
             }
             break
-
-          default:
-            k += 1
-            continue
         }
 
         result.info.push(info)

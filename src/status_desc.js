@@ -86,7 +86,8 @@ module.exports = {
   },
   207: {
     name: 'DEVICE_FULL',
-    description: 'This event is reported when the Note Float has reached its limit of stored notes. This event will be reported until a note is paid out or stacked.',
+    description:
+      'This event is reported when the Note Float has reached its limit of stored notes. This event will be reported until a note is paid out or stacked.',
   },
   209: {
     name: 'BAR_CODE_TICKET_ACKNOWLEDGE',

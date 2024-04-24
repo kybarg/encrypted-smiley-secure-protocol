@@ -74,7 +74,7 @@ eSSP
   .then(() =>
     eSSP.command('SET_CHANNEL_INHIBITS', {
       channels: Array(channels.length).fill(1),
-    })
+    }),
   )
   .then(() => eSSP.enable())
   .then(() => {

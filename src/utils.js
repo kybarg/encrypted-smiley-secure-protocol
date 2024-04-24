@@ -374,7 +374,7 @@ function parseData(data, currentCommand, protocolVersion, deviceUnitType) {
 
         if (protocol_version >= 6) {
           const country_codes_for_values = Array.from({ length: number_of_coin_values }, (_, i) =>
-            readBytesFromBuffer(data, 10 + number_of_coin_values * 2 + i * 3, 3).toString()
+            readBytesFromBuffer(data, 10 + number_of_coin_values * 2 + i * 3, 3).toString(),
           )
           Object.assign(result.info, { country_codes_for_values })
         }

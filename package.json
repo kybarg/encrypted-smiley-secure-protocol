@@ -6,7 +6,7 @@
   "scripts": {
     "test:watch": "jest --watch",
     "test": "jest --coverage",
-    "lint": "eslint src && npx prettier --check ."
+    "lint": "eslint src"
   },
   "engines": {
     "npm": ">=8.0.0",

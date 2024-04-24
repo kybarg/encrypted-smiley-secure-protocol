@@ -157,146 +157,133 @@ function uInt16LE(number) {
 
 function argsToByte(command, args, protocolVersion) {
   if (args !== undefined) {
-    if (['SET_GENERATOR', 'SET_MODULUS', 'REQUEST_KEY_EXCHANGE'].includes(command)) {
-      return [...int64LE(args.key)]
-    } else if (command === 'SET_DENOMINATION_ROUTE') {
-      if (protocolVersion >= 6) {
-        return [args.route === 'payout' ? 0 : 1].concat([...int32LE(args.value)], [...Buffer.from(args.country_code, 'ascii')])
+    switch (command) {
+      case 'SET_GENERATOR':
+      case 'SET_MODULUS':
+      case 'REQUEST_KEY_EXCHANGE':
+        return int64LE(args.key)
+      case 'SET_DENOMINATION_ROUTE':
+        if (protocolVersion >= 6) {
+          return Buffer.concat([Buffer.from([args.route === 'payout' ? 0 : 1]), int32LE(args.value), Buffer.from(args.country_code, 'ascii')])
+        }
+        return Buffer.concat([Buffer.from([args.route === 'payout' ? 0 : 1]), args.isHopper ? int16LE(args.value) : int32LE(args.value)])
+      case 'SET_CHANNEL_INHIBITS':
+        return uInt16LE(args.channels.reduce((acc, index) => acc | (1 << (index - 1)), 0x0000))
+      case 'SET_COIN_MECH_GLOBAL_INHIBIT':
+        return Buffer.from([args.enable ? 1 : 0])
+      case 'SET_HOPPER_OPTIONS': {
+        let res = 0
+        if (args.payMode) res += 1
+        if (args.levelCheck) res += 2
+        if (args.motorSpeed) res += 4
+        if (args.cashBoxPayActive) res += 8
+        return int16LE(res)
       }
-      return [args.route === 'payout' ? 0 : 1].concat([...(args.isHopper ? int16LE(args.value) : int32LE(args.value))])
-    } else if (command === 'SET_CHANNEL_INHIBITS') {
-      return [
-        ...uInt16LE(
-          parseInt(
-            args.channels
-              .reverse()
-              .map(bit => (bit ? 1 : 0))
-              .join(''),
-            2
-          )
-        ),
-      ]
-    } else if (command === 'SET_COIN_MECH_GLOBAL_INHIBIT') {
-      return [args.enable ? 1 : 0]
-    } else if (command === 'SET_HOPPER_OPTIONS') {
-      let res = 0
-      res += args.payMode ? 1 : 0
-      res += args.levelCheck ? 2 : 0
-      res += args.motorSpeed ? 4 : 0
-      res += args.cashBoxPayAcive ? 8 : 0
+      case 'GET_DENOMINATION_ROUTE':
+        if (protocolVersion >= 6) {
+          return Buffer.concat([int32LE(args.value), Buffer.from(args.country_code, 'ascii')])
+        }
+        return args.isHopper ? int16LE(args.value) : int32LE(args.value)
+      case 'SET_DENOMINATION_LEVEL':
+        if (protocolVersion >= 6) {
+          return Buffer.concat([int16LE(args.value), int32LE(args.denomination), Buffer.from(args.country_code, 'ascii')])
+        }
+        return Buffer.concat([int16LE(args.value), int16LE(args.denomination)])
+      case 'SET_REFILL_MODE':
+        let result = Buffer.alloc(0)
+        switch (args.mode) {
+          case 'on':
+            result = Buffer.from([0x05, 0x81, 0x10, 0x11, 0x01])
+            break
+          case 'off':
+            result = Buffer.from([0x05, 0x81, 0x10, 0x11, 0x00])
+            break
+          case 'get':
+            result = Buffer.from([0x05, 0x81, 0x10, 0x01])
+            break
+        }
+        return result
+      case 'HOST_PROTOCOL_VERSION':
+        return Buffer.from([args.version])
+      case 'SET_BAR_CODE_CONFIGURATION':
+        const enable = { none: 0, top: 1, bottom: 2, both: 3 }
+        let number = Math.min(Math.max(args.numChar || 6, 6), 24)
+        return Buffer.from([enable[args.enable || 'none'], 0x01, number])
+      case 'SET_BAR_CODE_INHIBIT_STATUS': {
+        let byte = 0xff
+        if (!args.currencyRead) byte &= 0xfe
+        if (!args.barCode) byte &= 0xfd
+        return Buffer.from([byte])
+      }
+      case 'PAYOUT_AMOUNT':
+        if (protocolVersion >= 6) {
+          return Buffer.concat([int32LE(args.amount), Buffer.from(args.country_code, 'ascii'), Buffer.from([args.test ? 0x19 : 0x58])])
+        }
+        return int32LE(args.amount)
+      case 'GET_DENOMINATION_LEVEL':
+        if (protocolVersion >= 6) {
+          return Buffer.concat([int32LE(args.amount), Buffer.from(args.country_code, 'ascii')])
+        }
+        return int32LE(args.amount)
+      case 'FLOAT_AMOUNT': {
+        const bufferArray = [int16LE(args.min_possible_payout), int32LE(args.amount)]
 
-      return [...int16LE(res)]
-    } else if (command === 'GET_DENOMINATION_ROUTE') {
-      if (protocolVersion >= 6) {
-        return [...int32LE(args.value)].concat([...Buffer.from(args.country_code, 'ascii')])
-      }
-      return [...(args.isHopper ? int16LE(args.value) : int32LE(args.value))]
-    } else if (command === 'SET_DENOMINATION_LEVEL') {
-      if (protocolVersion >= 6) {
-        return [...int16LE(args.value)].concat([...int32LE(args.denomination)], [...Buffer.from(args.country_code, 'ascii')])
-      }
-      return [...int16LE(args.value)].concat([...int16LE(args.denomination)])
-    } else if (command === 'SET_REFILL_MODE') {
-      let result = []
-      if (args.mode === 'on') {
-        result = [0x05, 0x81, 0x10, 0x11, 0x01]
-      } else if (args.mode === 'off') {
-        result = [0x05, 0x81, 0x10, 0x11, 0x00]
-      } else if (args.mode === 'get') {
-        result = [0x05, 0x81, 0x10, 0x01]
-      }
+        if (protocolVersion >= 6) {
+          bufferArray.push(Buffer.from(args.country_code, 'ascii'), Buffer.from([args.test ? 0x19 : 0x58]))
+        }
 
-      return result
-    } else if (command === 'HOST_PROTOCOL_VERSION') {
-      return [args.version]
-    } else if (command === 'SET_BAR_CODE_CONFIGURATION') {
-      const enable = { none: 0, top: 1, bottom: 2, both: 3 }
-      let number = args.numChar || 6
-      if (number < 6) {
-        number = 6
+        return Buffer.concat(bufferArray)
       }
-      if (number > 24) {
-        number = 24
-      }
+      case 'SET_COIN_MECH_INHIBITS': {
+        let buffer = Buffer.concat([Buffer.from([args.inhibited ? 0x00 : 0x01]), int16LE(args.amount)])
 
-      return [enable[args.enable || 'none'], 0x01, number]
-    } else if (command === 'SET_BAR_CODE_INHIBIT_STATUS') {
-      let byte = 0xff
+        if (protocolVersion >= 6) {
+          buffer = Buffer.concat([buffer, Buffer.from(args.country_code, 'ascii')])
+        }
 
-      if (!args.currencyRead) {
-        byte &= 0xfe
+        return buffer
       }
-
-      if (!args.barCode) {
-        byte &= 0xfd
+      case 'FLOAT_BY_DENOMINATION':
+      case 'PAYOUT_BY_DENOMINATION':
+        let tmpBufferArray = [Buffer.from([args.value.length])]
+        for (let i = 0; i < args.value.length; i++) {
+          tmpBufferArray.push(int16LE(args.value[i].number), int32LE(args.value[i].denomination), Buffer.from(args.value[i].country_code, 'ascii'))
+        }
+        tmpBufferArray.push(Buffer.from([args.test ? 0x19 : 0x58]))
+        return Buffer.concat(tmpBufferArray)
+      case 'SET_VALUE_REPORTING_TYPE':
+        return Buffer.from([args.reportBy === 'channel' ? 0x01 : 0x00])
+      case 'SET_BAUD_RATE':
+        let byte = 0
+        switch (args.baudrate) {
+          case 9600:
+            byte = 0
+            break
+          case 38400:
+            byte = 1
+            break
+          case 115200:
+            byte = 2
+            break
+        }
+        return Buffer.from([byte, args.reset_to_default_on_reset ? 0 : 1])
+      case 'CONFIGURE_BEZEL':
+        return Buffer.concat([Buffer.from(args.RGB, 'hex'), Buffer.from([args.volatile ? 0 : 1])])
+      case 'ENABLE_PAYOUT_DEVICE': {
+        let byte = 0
+        byte += args.GIVE_VALUE_ON_STORED || args.REQUIRE_FULL_STARTUP ? 1 : 0
+        byte += args.NO_HOLD_NOTE_ON_PAYOUT || args.OPTIMISE_FOR_PAYIN_SPEED ? 2 : 0
+        return Buffer.from([byte])
       }
-
-      return [byte]
-    } else if (command === 'PAYOUT_AMOUNT') {
-      if (protocolVersion >= 6) {
-        return [...int32LE(args.amount)].concat([...Buffer.from(args.country_code, 'ascii')], [args.test ? 0x19 : 0x58])
-      }
-      return [...int32LE(args.amount)]
-    } else if (command === 'GET_DENOMINATION_LEVEL') {
-      if (protocolVersion >= 6) {
-        return [...int32LE(args.amount)].concat([...Buffer.from(args.country_code, 'ascii')])
-      }
-      return [...int32LE(args.amount)]
-    } else if (command === 'FLOAT_AMOUNT') {
-      if (protocolVersion >= 6) {
-        return [...int16LE(args.min_possible_payout)].concat(
-          [...int32LE(args.amount)],
-          [...Buffer.from(args.country_code, 'ascii')],
-          [args.test ? 0x19 : 0x58]
-        )
-      }
-      return [...int16LE(args.min_possible_payout)].concat([...int32LE(args.amount)])
-    } else if (command === 'SET_COIN_MECH_INHIBITS') {
-      if (protocolVersion >= 6) {
-        return [args.inhibited ? 0x00 : 0x01].concat([...int16LE(args.amount)], [...Buffer.from(args.country_code, 'ascii')])
-      }
-      return [args.inhibited ? 0x00 : 0x01].concat([...int16LE(args.amount)])
-    } else if (command === 'FLOAT_BY_DENOMINATION' || command === 'PAYOUT_BY_DENOMINATION') {
-      let tmpArray = [args.value.length]
-
-      for (let i = 0; i < args.value.length; i++) {
-        tmpArray = tmpArray.concat(
-          [...int16LE(args.value[i].number)],
-          [...int32LE(args.value[i].denomination)],
-          [...Buffer.from(args.value[i].country_code, 'ascii')]
-        )
-      }
-
-      return tmpArray.concat([args.test ? 0x19 : 0x58])
-    } else if (command === 'SET_VALUE_REPORTING_TYPE') {
-      return [args.reportBy === 'channel' ? 0x01 : 0x00]
-    } else if (command === 'SET_BAUD_RATE') {
-      let byte = 0
-      if (args.baudrate === 9600) {
-        byte = 0
-      } else if (args.baudrate === 38400) {
-        byte = 1
-      } else if (args.baudrate === 115200) {
-        byte = 2
-      }
-
-      return [byte, args.reset_to_default_on_reset ? 0 : 1]
-    } else if (command === 'CONFIGURE_BEZEL') {
-      return [...Buffer.from(args.RGB, 'hex')].concat(args.volatile ? 0 : 1)
-    } else if (command === 'ENABLE_PAYOUT_DEVICE') {
-      let byte = 0
-      byte += args.GIVE_VALUE_ON_STORED || args.REQUIRE_FULL_STARTUP ? 1 : 0
-      byte += args.NO_HOLD_NOTE_ON_PAYOUT || args.OPTIMISE_FOR_PAYIN_SPEED ? 2 : 0
-      return [byte]
-    } else if (command === 'SET_FIXED_ENCRYPTION_KEY') {
-      return Buffer.from(args.fixedKey, 'hex').swap64()
-    } else if (command === 'COIN_MECH_OPTIONS') {
-      return [args.ccTalk ? 1 : 0]
+      case 'SET_FIXED_ENCRYPTION_KEY':
+        return Buffer.from(args.fixedKey, 'hex').swap64()
+      case 'COIN_MECH_OPTIONS':
+        return Buffer.from([args.ccTalk ? 1 : 0])
+      default:
+        return Buffer.alloc(0)
     }
-
-    return []
   }
-  return []
+  return Buffer.alloc(0)
 }
 
 function parseData(data, currentCommand, protocolVersion, deviceUnitType) {

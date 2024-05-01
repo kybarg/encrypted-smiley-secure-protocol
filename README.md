@@ -1,6 +1,6 @@
 # encrypted-smiley-secure-protocol
 
-> [!WARING]
+> [!WARNING]
 > This package has been deprecated. Please use [@kybarg/ssp](https://www.npmjs.com/package/@kybarg/ssp)
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fskokov3812%2Fencrypted-smiley-secure-protocol.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fskokov3812%2Fencrypted-smiley-secure-protocol?ref=badge_shield)
